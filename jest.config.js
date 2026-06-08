@@ -1,12 +1,12 @@
 module.exports = {
   projects: [
     {
-      displayName: '@financial-hub/api',
-      rootDir: '<rootDir>/apps/api',
+      displayName: 'api',
       testEnvironment: 'node',
-      testMatch: ['**/*.spec.ts'],
+      rootDir: 'apps/api',
+      testMatch: ['<rootDir>/src/**/*.spec.ts'],
       transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
+        '^.+\.tsx?$': ['ts-jest', {
           tsconfig: {
             esModuleInterop: true,
             allowSyntheticDefaultImports: true,
@@ -14,19 +14,13 @@ module.exports = {
         }],
       },
       moduleNameMapper: {
-        '^@financial-hub/data$': '<rootDir>/../../libs/data/src',
-        '^@financial-hub/core$': '<rootDir>/../../libs/core/src',
-        '^@financial-hub/common$': '<rootDir>/../../libs/common/src',
+        '^@financial-hub/(.*)$': '<rootDir>/../../libs/$1/src',
       },
       collectCoverageFrom: [
         'src/**/*.ts',
         '!src/**/*.spec.ts',
         '!src/main.ts',
         '!src/**/*.module.ts',
-      ],
-      coveragePathIgnorePatterns: [
-        '/node_modules/',
-        '/dist/',
       ],
       coverageThreshold: {
         global: {
@@ -35,39 +29,48 @@ module.exports = {
           lines: 60,
           statements: 60,
         },
+        './src/integrations/': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
       },
     },
     {
-      displayName: '@financial-hub/web',
-      rootDir: '<rootDir>/apps/web',
+      displayName: 'web',
       testEnvironment: 'jsdom',
-      testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
+      rootDir: 'apps/web',
+      testMatch: ['<rootDir>/src/**/*.test.tsx', '<rootDir>/src/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
       transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
-          tsconfig: {
-            jsx: 'react',
-            esModuleInterop: true,
-            allowSyntheticDefaultImports: true,
-          },
-        }],
+        '^.+\.(tsx?|jsx?)$': ['@swc/jest'],
       },
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
       moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/src/$1',
-        '^@financial-hub/common$': '<rootDir>/../../libs/common/src',
+        '^@financial-hub/(.*)$': '<rootDir>/../../libs/$1/src',
+        '\.(css|less|scss|sass)$': 'identity-obj-proxy',
       },
       collectCoverageFrom: [
         'src/**/*.{ts,tsx}',
+        '!src/**/*.test.{ts,tsx}',
         '!src/**/*.spec.{ts,tsx}',
-        '!src/pages/**',
+        '!src/pages/_*.tsx',
         '!src/**/*.d.ts',
       ],
-      coveragePathIgnorePatterns: [
-        '/node_modules/',
-        '/.next/',
-      ],
+      coverageThreshold: {
+        './src/components/BankConnectionModal.tsx': {
+          branches: 75,
+          functions: 75,
+          lines: 75,
+          statements: 75,
+        },
+        './src/pages/integrations/revolut/callback.tsx': {
+          branches: 75,
+          functions: 75,
+          lines: 75,
+          statements: 75,
+        },
+      },
     },
   ],
-  testTimeout: 10000,
-  verbose: true,
 };
