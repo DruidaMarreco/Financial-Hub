@@ -44,6 +44,18 @@ export default function SignUp() {
     }
   };
 
+  const handleDevMode = () => {
+    // Dev mode: bypass auth
+    const mockUser = {
+      id: 'dev-user-123',
+      name: formData.name || 'Simão Tadeu Castelo Miguel',
+      email: formData.email || 'simao.tc.miguel@gmail.com',
+    };
+    localStorage.setItem('mock_user', JSON.stringify(mockUser));
+    localStorage.setItem('auth_token', 'dev-token-123');
+    router.push('/dashboard');
+  };
+
   return (
     <>
       <Head>
@@ -134,6 +146,15 @@ export default function SignUp() {
               {loading ? 'Creating account...' : 'Sign Up'}
             </button>
           </form>
+
+          {/* Dev Mode Button */}
+          <button
+            type="button"
+            onClick={handleDevMode}
+            className="w-full mt-3 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors text-sm"
+          >
+            🔓 Demo Access (Dev Mode)
+          </button>
 
           <p className="mt-6 text-center text-gray-600">
             Already have an account?{' '}
