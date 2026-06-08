@@ -42,7 +42,7 @@ export class PlaidService {
           },
           client_exposed_id: userId,
           language: 'en',
-          country_codes: ['US'],
+          country_codes: ['US', 'GB', 'ES', 'PT', 'FR', 'DE', 'IT', 'IE', 'NL', 'BE'],
           products: ['auth', 'transactions'],
         }),
       });
