@@ -6,7 +6,8 @@ const nextConfig = {
     optimizePackageImports: ["@ui/components"],
   },
   typescript: {
-    tsconfigPath: '../../tsconfig.json',
+    tsconfigPath: './tsconfig.json',
+    ignoreBuildErrors: false,
   },
   // Prevent aggressive caching in development, especially in Firefox
   onDemandEntries: {

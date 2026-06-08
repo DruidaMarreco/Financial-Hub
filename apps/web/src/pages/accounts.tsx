@@ -202,11 +202,11 @@ export default function AccountsPage() {
 
   const filteredAccounts = filterType === 'all'
     ? accounts
-    : accounts.filter(acc => acc.bank === filterType);
+    : accounts.filter(acc => acc.institution === filterType);
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   const totalMonthlySpend = accounts.reduce((sum, acc) => sum + acc.monthlySpend, 0);
-  const mealCardAccounts = accounts.filter(acc => acc.bank === 'meal-card');
+  const mealCardAccounts = accounts.filter(acc => acc.institution === 'meal-card');
 
   return (
     <>
