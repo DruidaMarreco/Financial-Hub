@@ -1,18 +1,24 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request, Param, Query, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CryptoWalletService } from './crypto-wallet.service';
 import { StockBrokerService } from './stock-broker.service';
 import { RealEstateService } from './real-estate.service';
 import { AssetAggregatorService } from './asset-aggregator.service';
+import { RevolutService } from './revolut.service';
+import { IntegrationsService } from './integrations.service';
 
 @Controller('integrations')
 @UseGuards(JwtAuthGuard)
 export class IntegrationsController {
+  private readonly logger = new Logger(IntegrationsController.name);
+
   constructor(
     private cryptoService: CryptoWalletService,
     private stockService: StockBrokerService,
     private realEstateService: RealEstateService,
     private aggregator: AssetAggregatorService,
+    private revolutService: RevolutService,
+    private integrationsService: IntegrationsService,
   ) {}
 
   // CRYPTO ENDPOINTS
@@ -180,5 +186,91 @@ export class IntegrationsController {
       body.annualReturn,
       body.years,
     );
+  }
+
+  // REVOLUT BANK INTEGRATION ENDPOINTS
+  @Post('revolut/auth-url')
+  async getRevolutAuthUrl(@Request() req, @Body() body: { redirectUri: string }) {
+    const clientId = process.env.REVOLUT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error('REVOLUT_CLIENT_ID not configured');
+    }
+
+    const state = Math.random().toString(36).substring(7);
+    const authUrl = this.revolutService.getAuthorizationUrl(
+      clientId,
+      body.redirectUri,
+      state,
+    );
+
+    return {
+      auth_url: authUrl,
+      state,
+    };
+  }
+
+  @Get('revolut/callback')
+  async revoltOAuthCallback(
+    @Request() req,
+    @Query('code') code: string,
+    @Query('state') state: string,
+  ) {
+    if (!code) {
+      throw new Error('No authorization code received');
+    }
+
+    const userId = req.user.id;
+    const clientId = process.env.REVOLUT_CLIENT_ID;
+    const clientSecret = process.env.REVOLUT_CLIENT_SECRET;
+    const redirectUri = process.env.REVOLUT_REDIRECT_URI || 'http://localhost:3000/integrations/revolut/callback';
+
+    if (!clientId || !clientSecret) {
+      throw new Error('Revolut credentials not configured');
+    }
+
+    try {
+      const tokenData = await this.revolutService.exchangeCodeForToken(
+        code,
+        clientId,
+        clientSecret,
+        redirectUri,
+      );
+
+      await this.integrationsService.storeRevolutCredentials(userId, tokenData);
+
+      const accounts = await this.revolutService.getAccounts(
+        tokenData.access_token,
+        process.env.NODE_ENV === 'development',
+      );
+
+      await this.integrationsService.syncRevolutAccounts(userId, accounts);
+
+      return {
+        success: true,
+        accounts_synced: accounts.length,
+        message: 'Revolut accounts connected successfully',
+      };
+    } catch (error) {
+      this.logger.error('Revolut OAuth callback failed:', error);
+      throw error;
+    }
+  }
+
+  @Get('revolut/accounts')
+  async getRevolutAccounts(@Request() req) {
+    const userId = req.user.id;
+    return this.integrationsService.getRevolutAccounts(userId);
+  }
+
+  @Post('revolut/sync')
+  async syncRevolutData(@Request() req) {
+    const userId = req.user.id;
+    return this.integrationsService.syncAllRevolutData(userId);
+  }
+
+  @Get('revolut/status')
+  async getRevolutStatus(@Request() req) {
+    const userId = req.user.id;
+    return this.integrationsService.getRevolutStatus(userId);
   }
 }
