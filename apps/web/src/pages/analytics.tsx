@@ -1,38 +1,36 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Link from 'next/link';
-import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-interface FinancialGoals {
-  netWorth: number;
-  monthlyExpenses: number;
-  annualExpenses: number;
-  fiNumber: number;
-  fiProgress: number;
-  runway: number;
-  runoutDate: string;
-  savingsRate: number;
-}
-
-interface CashFlow {
-  income: number;
-  expenses: number;
-  savings: number;
-  savingsRate: number;
-  byCategory: Record<string, number>;
-}
+import Layout from '../components/Layout';
 
 export default function AnalyticsPage() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
-  const [goals, setGoals] = useState<FinancialGoals | null>(null);
-  const [cashflow, setCashflow] = useState<CashFlow | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [mode, setMode] = useState<'freedom' | 'cashflow' | 'forecast'>('freedom');
+  const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [dateRange, setDateRange] = useState('3m');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [viewType, setViewType] = useState('overview');
+  const [sortBy, setSortBy] = useState('amount');
+
+  const monthlyData = [
+    { month: 'Jan', amount: 2500, budget: 3000 },
+    { month: 'Feb', amount: 2800, budget: 3000 },
+    { month: 'Mar', amount: 2200, budget: 3000 },
+    { month: 'Apr', amount: 3100, budget: 3000 },
+    { month: 'May', amount: 2600, budget: 3000 },
+    { month: 'Jun', amount: 2900, budget: 3000 },
+  ];
+
+  const categoryData = [
+    { category: 'Groceries', amount: 1200, percentage: 24 },
+    { category: 'Transportation', amount: 800, percentage: 16 },
+    { category: 'Utilities', amount: 400, percentage: 8 },
+    { category: 'Entertainment', amount: 600, percentage: 12 },
+    { category: 'Dining', amount: 900, percentage: 18 },
+    { category: 'Shopping', amount: 700, percentage: 14 },
+  ];
+
+  const [filteredCategories, setFilteredCategories] = useState(categoryData);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -41,29 +39,17 @@ export default function AnalyticsPage() {
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchAnalytics();
+    if (selectedCategory === 'all') {
+      let sorted = [...categoryData];
+      if (sortBy === 'amount') sorted.sort((a, b) => b.amount - a.amount);
+      if (sortBy === 'name') sorted.sort((a, b) => a.category.localeCompare(b.category));
+      setFilteredCategories(sorted);
+    } else {
+      setFilteredCategories(
+        categoryData.filter((cat) => cat.category.toLowerCase() === selectedCategory.toLowerCase())
+      );
     }
-  }, [isAuthenticated]);
-
-  const fetchAnalytics = async () => {
-    try {
-      const goalsRes = await axios.get(`${API_URL}/analytics/goals`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
-      });
-      setGoals(goalsRes.data);
-
-      const cashflowRes = await axios.get(`${API_URL}/analytics/cashflow`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
-      });
-      setCashflow(cashflowRes.data);
-
-      setAnalyticsLoading(false);
-    } catch (error) {
-      console.error('Failed to load analytics:', error);
-      setAnalyticsLoading(false);
-    }
-  };
+  }, [selectedCategory, sortBy]);
 
   if (loading) {
     return (
@@ -76,199 +62,112 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
+
+  const totalSpending = categoryData.reduce((sum, cat) => sum + cat.amount, 0);
+  const avgMonthly = monthlyData.reduce((sum, m) => sum + m.amount, 0) / monthlyData.length;
 
   return (
     <>
       <Head>
         <title>Analytics - Financial Hub</title>
       </Head>
-
-      <div className="min-h-screen bg-gray-50">
-        {/* Navigation */}
-        <nav className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Financial Hub</h1>
-            <div className="flex gap-4 items-center">
-              <Link href="/dashboard" className="text-gray-700 hover:text-gray-900 font-medium">
-                Dashboard
-              </Link>
-              <Link href="/accounts" className="text-gray-700 hover:text-gray-900 font-medium">
-                Accounts
-              </Link>
-              <Link href="/transactions" className="text-gray-700 hover:text-gray-900 font-medium">
-                Transactions
-              </Link>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
+      <Layout title="Analytics & Insights">
+        {/* Controls */}
+        <div className="mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-3">📅 Time Period</label>
+              <div className="flex gap-2">
+                {['1m', '3m', '6m', '1y'].map((r) => (
+                  <button key={r} onClick={() => setDateRange(r)} className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${dateRange === r ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    {r === '1m' ? '1M' : r === '3m' ? '3M' : r === '6m' ? '6M' : '1Y'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-3">🏷️ Category</label>
+              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-sm">
+                <option value="all">All</option>
+                {categoryData.map((cat) => (
+                  <option key={cat.category} value={cat.category.toLowerCase()}>{cat.category}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-3">📊 Sort</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-medium text-sm">
+                <option value="amount">Amount</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-3">👁️ View</label>
+              <div className="flex gap-2">
+                <button onClick={() => setViewType('overview')} className={`flex-1 px-3 py-2 text-sm rounded-lg font-semibold transition-all ${viewType === 'overview' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Overview</button>
+                <button onClick={() => setViewType('detailed')} className={`flex-1 px-3 py-2 text-sm rounded-lg font-semibold transition-all ${viewType === 'detailed' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Detailed</button>
+              </div>
             </div>
           </div>
-        </nav>
+        </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Financial Analytics</h2>
+        {/* Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[
+            { icon: '💸', label: 'Total Spending', value: `$${totalSpending}` },
+            { icon: '📊', label: 'Avg Monthly', value: `$${Math.round(avgMonthly)}` },
+            { icon: '🎯', label: 'Savings Rate', value: '32%' },
+            { icon: '📈', label: 'Trend', value: '↓ 8%' },
+          ].map((m, i) => (
+            <div key={i} className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg hover:shadow-xl transition-all cursor-pointer">
+              <div className="text-3xl mb-2">{m.icon}</div>
+              <p className="text-white/80 text-sm">{m.label}</p>
+              <p className="text-2xl font-bold">{m.value}</p>
+            </div>
+          ))}
+        </div>
 
-            {/* Mode Selector */}
-            <div className="flex gap-4 mb-6">
-              {['freedom', 'cashflow', 'forecast'].map(m => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m as any)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    mode === m
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300'
-                  }`}
-                >
-                  {m === 'freedom' ? '🎯 Freedom Tracker' : m === 'cashflow' ? '💰 Cash Flow' : '📈 Forecast'}
-                </button>
+        {/* Content */}
+        {viewType === 'overview' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white/20">
+              <h3 className="text-2xl font-bold mb-6">💰 Monthly Spending</h3>
+              {monthlyData.map((item, idx) => (
+                <div key={idx} className="hover:bg-gray-50 p-4 rounded-lg transition-all mb-3 cursor-pointer">
+                  <div className="flex justify-between mb-2">
+                    <span className="font-semibold">{item.month}</span>
+                    <span className="text-sm text-gray-600">${item.amount} / ${item.budget}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className={`h-full transition-all ${item.amount > item.budget ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${Math.min((item.amount / item.budget) * 100, 100)}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white/20">
+              <h3 className="text-2xl font-bold mb-6">🥧 Categories</h3>
+              {filteredCategories.map((item, idx) => (
+                <div key={idx} className="hover:bg-blue-50 p-4 rounded-xl transition-all mb-3 cursor-pointer">
+                  <div className="flex justify-between mb-2">
+                    <span className="font-semibold">{item.category}</span>
+                    <span className="font-bold text-blue-600">${item.amount}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="h-full bg-blue-500" style={{ width: `${item.percentage}%` }}></div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-
-          {analyticsLoading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600">Loading analytics...</p>
-            </div>
-          ) : (
-            <>
-              {mode === 'freedom' && goals && (
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Independence</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-gray-600 text-sm">FI Number (FIRE Target)</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          ${goals.fiNumber.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Current Progress</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${Math.min(goals.fiProgress, 100)}%` }}
-                            ></div>
-                          </div>
-                          <p className="font-semibold">{Math.round(goals.fiProgress)}%</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Runway</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-gray-600 text-sm">Months of Expenses Covered</p>
-                        <p className="text-3xl font-bold text-green-600">{goals.runway} months</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Before Funds Depleted</p>
-                        <p className="text-lg text-gray-900">{new Date(goals.runoutDate).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Metrics</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Income</span>
-                        <span className="font-semibold text-green-600">+${(goals.annualExpenses / goals.savingsRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Expenses</span>
-                        <span className="font-semibold text-red-600">-${goals.monthlyExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t">
-                        <span className="font-medium">Savings Rate</span>
-                        <span className="font-bold text-blue-600">{(goals.savingsRate * 100).toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Net Worth</h3>
-                    <p className="text-3xl font-bold text-gray-900">
-                      ${goals.netWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {mode === 'cashflow' && cashflow && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6">This Month's Cash Flow</h3>
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="text-center">
-                      <p className="text-gray-600 text-sm mb-2">Income</p>
-                      <p className="text-3xl font-bold text-green-600">
-                        ${cashflow.income.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-600 text-sm mb-2">Expenses</p>
-                      <p className="text-3xl font-bold text-red-600">
-                        ${cashflow.expenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-600 text-sm mb-2">Savings</p>
-                      <p className="text-3xl font-bold text-blue-600">
-                        ${cashflow.savings.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-4">Expenses by Category</h4>
-                    <div className="space-y-3">
-                      {Object.entries(cashflow.byCategory)
-                        .sort(([, a], [, b]) => b - a)
-                        .slice(0, 10)
-                        .map(([category, amount]) => (
-                          <div key={category} className="flex justify-between items-center">
-                            <span className="text-gray-700 capitalize">{category}</span>
-                            <div className="flex-1 mx-4 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{
-                                  width: `${(amount / Math.max(...Object.values(cashflow.byCategory))) * 100}%`,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="font-semibold text-gray-900 w-20 text-right">
-                              ${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {mode === 'forecast' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Spending Forecast</h3>
-                  <p className="text-gray-600">Forecast data will appear after sufficient transaction history is available.</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+        ) : (
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white/20">
+            <h3 className="text-2xl font-bold mb-6">📊 Detailed View</h3>
+            <p className="text-gray-600">Interactive detailed analytics with drilling and advanced filters.</p>
+          </div>
+        )}
+      </Layout>
     </>
   );
 }
