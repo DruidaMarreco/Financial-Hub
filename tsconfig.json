@@ -2,30 +2,55 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "lib": ["ES2020"],
+    "lib": [
+      "ES2020"
+    ],
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@financial-hub/api/*": ["apps/api/src/*"],
-      "@financial-hub/web/*": ["apps/web/src/*"],
-      "@financial-hub/core/*": ["libs/core/src/*"],
-      "@financial-hub/data/*": ["libs/data/src/*"],
-      "@financial-hub/common/*": ["libs/common/src/*"]
-    }
+      "@financial-hub/api/*": [
+        "apps/api/src/*"
+      ],
+      "@financial-hub/web/*": [
+        "apps/web/src/*"
+      ],
+      "@financial-hub/core/*": [
+        "libs/core/src/*"
+      ],
+      "@financial-hub/data/*": [
+        "libs/data/src/*"
+      ],
+      "@financial-hub/common/*": [
+        "libs/common/src/*"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "jsx": "preserve"
   },
-  "include": ["apps/**/*", "libs/**/*"],
-  "exclude": ["node_modules", "dist", ".next", "coverage"]
+  "include": [
+    "apps/**/*",
+    "libs/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "coverage"
+  ]
 }

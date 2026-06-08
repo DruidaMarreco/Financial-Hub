@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { getAuthToken } from '../services/auth';
 
 export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = getAuthToken();
+    // Redirect to signin on mount
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (token) {
       router.push('/dashboard');
     } else {
