@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from './auth/auth.module';
+import { DataModule } from '@financial-hub/data';
 
 @Module({
-  imports: [],
+  imports: [DataModule, AuthModule],
   controllers: [],
   providers: [],
 })
