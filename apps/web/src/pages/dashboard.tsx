@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -39,12 +40,17 @@ export default function Dashboard() {
         <nav className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Financial Hub</h1>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
+            <div className="flex gap-4 items-center">
+              <Link href="/accounts" className="text-gray-700 hover:text-gray-900 font-medium">
+                Accounts
+              </Link>
+              <button
+                onClick={logout}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </nav>
 
