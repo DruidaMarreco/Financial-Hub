@@ -44,6 +44,9 @@ export default function Dashboard() {
               <Link href="/accounts" className="text-gray-700 hover:text-gray-900 font-medium">
                 Accounts
               </Link>
+              <Link href="/transactions" className="text-gray-700 hover:text-gray-900 font-medium">
+                Transactions
+              </Link>
               <button
                 onClick={logout}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"

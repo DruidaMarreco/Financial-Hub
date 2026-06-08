@@ -64,24 +64,28 @@ model Account {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  accountId   String
-  amount      Float
-  currency    String   @default("USD")
-  type        String   // income, expense, transfer, investment
-  description String
-  category    String?
-  merchant    String?
-  date        DateTime
-  tags        String[] @default([])
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  accountId            String
+  amount               Float
+  currency             String   @default("USD")
+  type                 String   // income, expense, transfer, investment
+  description          String
+  category             String   @default("uncategorized")
+  categoryConfidence   Float    @default(0.3) // 0.0-1.0
+  merchant             String?
+  date                 DateTime
+  tags                 String[] @default([])
+  notes                String?
+  anomalyScore         Float    @default(0) // 0.0-1.0, higher = more anomalous
+  isAnomaly            Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
   @@index([date])
+  @@index([category])
   @@map("transactions")
 }
 
