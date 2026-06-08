@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Write-Host 'Searching for financial aggregation projects on GitHub...'\")",
+      "WebSearch"
+    ]
+  }
+}

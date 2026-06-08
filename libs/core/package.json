@@ -1,0 +1,16 @@
+{
+  "name": "@financial-hub/core",
+  "version": "0.1.0",
+  "description": "Core business logic and domain models",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "@types/jest": "^29.5.7"
+  }
+}

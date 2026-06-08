@@ -1,0 +1,19 @@
+{
+  "name": "@financial-hub/data",
+  "version": "0.1.0",
+  "description": "Data layer, database models, and Prisma schema",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "prisma": "^5.6.0"
+  }
+}

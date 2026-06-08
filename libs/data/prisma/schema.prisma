@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String
+  password  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  profile       UserProfile?
+  accounts      Account[]
+  transactions  Transaction[]
+  portfolios    Portfolio[]
+  categories    TransactionCategory[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  preferredCurrency String  @default("USD")
+  timezone         String   @default("UTC")
+  language         String   @default("en")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Account {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  accountNumber   String
+  type            String   // bank, credit_card, investment, crypto, savings
+  status          String   @default("active") // active, inactive, closed
+  balance         Float    @default(0)
+  currency        String   @default("USD")
+  institution     String
+  plaidAccountId  String?
+  plaidAccessToken String?
+  lastSync        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  holdings     Holding[]
+
+  @@unique([userId, accountNumber])
+  @@map("accounts")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  accountId   String
+  amount      Float
+  currency    String   @default("USD")
+  type        String   // income, expense, transfer, investment
+  description String
+  category    String?
+  merchant    String?
+  date        DateTime
+  tags        String[] @default([])
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([date])
+  @@map("transactions")
+}
+
+model TransactionCategory {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+  color  String
+  icon   String
+  order  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@map("transaction_categories")
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  totalValue  Float    @default(0)
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings Holding[]
+  metrics  PortfolioMetrics?
+
+  @@map("portfolios")
+}
+
+model Holding {
+  id           String   @id @default(cuid())
+  portfolioId  String
+  accountId    String?
+  symbol       String
+  name         String
+  quantity     Float
+  purchasePrice Float
+  currentPrice Float
+  purchaseDate DateTime
+  currency     String   @default("USD")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  account   Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@map("holdings")
+}
+
+model PortfolioMetrics {
+  id               String   @id @default(cuid())
+  portfolioId      String   @unique
+  totalInvested    Float
+  totalValue       Float
+  totalGain        Float
+  gainPercentage   Float
+  dayChange        Float
+  dayChangePercentage Float
+  calculatedAt     DateTime @default(now())
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_metrics")
+}
