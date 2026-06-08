@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const DEV_MODE = true; // Enable dev mode for localStorage auth
 
 export const authApi = axios.create({
   baseURL: `${API_URL}/auth`,
@@ -19,24 +20,60 @@ authApi.interceptors.request.use((config) => {
 });
 
 export async function signup(email: string, name: string, password: string, confirmPassword: string) {
-  const response = await authApi.post('/signup', {
-    email,
-    name,
-    password,
-    confirmPassword,
-  });
-  if (response.data.accessToken) {
-    setAuthToken(response.data.accessToken);
+  if (DEV_MODE) {
+    // Dev mode: use localStorage instead of API
+    const mockUser = {
+      id: `user-${Date.now()}`,
+      email,
+      name,
+    };
+    const devToken = `dev-token-${Date.now()}`;
+    localStorage.setItem('mock_user', JSON.stringify(mockUser));
+    localStorage.setItem('auth_token', devToken);
+    return { success: true, accessToken: devToken, user: mockUser };
   }
-  return response.data;
+
+  try {
+    const response = await authApi.post('/signup', {
+      email,
+      name,
+      password,
+      confirmPassword,
+    });
+    if (response.data.accessToken) {
+      setAuthToken(response.data.accessToken);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Signup error:', error);
+    throw error;
+  }
 }
 
 export async function signin(email: string, password: string) {
-  const response = await authApi.post('/signin', { email, password });
-  if (response.data.accessToken) {
-    setAuthToken(response.data.accessToken);
+  if (DEV_MODE) {
+    // Dev mode: use localStorage instead of API
+    const mockUser = {
+      id: 'dev-user-123',
+      email,
+      name: email.split('@')[0],
+    };
+    const devToken = `dev-token-${Date.now()}`;
+    localStorage.setItem('mock_user', JSON.stringify(mockUser));
+    localStorage.setItem('auth_token', devToken);
+    return { success: true, accessToken: devToken, user: mockUser };
   }
-  return response.data;
+
+  try {
+    const response = await authApi.post('/signin', { email, password });
+    if (response.data.accessToken) {
+      setAuthToken(response.data.accessToken);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Signin error:', error);
+    throw error;
+  }
 }
 
 export async function getCurrentUser() {
