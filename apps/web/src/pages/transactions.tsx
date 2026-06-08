@@ -290,7 +290,7 @@ export default function TransactionsPage() {
                       <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
-                          currency: tx.currency,
+                          currency: 'USD',
                         }).format(Math.abs(tx.amount))}
                       </td>
                     </tr>
