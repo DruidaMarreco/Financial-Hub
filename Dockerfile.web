@@ -1,0 +1,40 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
+
+COPY package*.json ./
+COPY npm-shrinkwrap.json* ./
+
+RUN npm ci
+
+COPY apps/web ./apps/web
+COPY libs ./libs
+COPY tsconfig.json ./
+COPY tsconfig.base.json ./
+COPY next.config.js ./
+
+RUN npm run build --workspace=@financial-hub/web
+
+# Production image
+FROM node:18-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache dumb-init
+
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+COPY --from=builder /app/apps/web/.next ./apps/web/.next
+COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/apps/web/package.json ./apps/web/
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["npm", "run", "start", "--workspace=@financial-hub/web"]

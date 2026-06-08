@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(powershell -Command \"Write-Host 'Searching for financial aggregation projects on GitHub...'\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(gh pr create --base dev --head feature/user-auth --title '[FEATURE] User Authentication with JWT' --body ' *)",
+      "Bash(gh pr *)",
+      "Bash(git pull *)"
     ]
   }
 }
