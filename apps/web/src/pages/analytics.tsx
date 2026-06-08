@@ -4,6 +4,14 @@ import Head from 'next/head';
 import { useAuth } from '../hooks/useAuth';
 import Layout from '../components/Layout';
 
+interface Account {
+  id: string;
+  name: string;
+  balance: number;
+  transactions?: Array<{ amount: number; category: string; date: string }>;
+  monthlySpend?: number;
+}
+
 export default function AnalyticsPage() {
   const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -11,26 +19,54 @@ export default function AnalyticsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewType, setViewType] = useState('overview');
   const [sortBy, setSortBy] = useState('amount');
+  const [monthlyData, setMonthlyData] = useState<Array<{ month: string; amount: number; budget: number }>>([]);
+  const [categoryData, setCategoryData] = useState<Array<{ category: string; amount: number; percentage: number }>>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Array<{ category: string; amount: number; percentage: number }>>([]);
 
-  const monthlyData = [
-    { month: 'Jan', amount: 2500, budget: 3000 },
-    { month: 'Feb', amount: 2800, budget: 3000 },
-    { month: 'Mar', amount: 2200, budget: 3000 },
-    { month: 'Apr', amount: 3100, budget: 3000 },
-    { month: 'May', amount: 2600, budget: 3000 },
-    { month: 'Jun', amount: 2900, budget: 3000 },
-  ];
+  // Load real data from user accounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('user_accounts');
+        if (saved) {
+          const accounts: Account[] = JSON.parse(saved);
 
-  const categoryData = [
-    { category: 'Groceries', amount: 1200, percentage: 24 },
-    { category: 'Transportation', amount: 800, percentage: 16 },
-    { category: 'Utilities', amount: 400, percentage: 8 },
-    { category: 'Entertainment', amount: 600, percentage: 12 },
-    { category: 'Dining', amount: 900, percentage: 18 },
-    { category: 'Shopping', amount: 700, percentage: 14 },
-  ];
+          // Calculate spending by category from real transactions
+          const categoryTotals: { [key: string]: number } = {};
+          accounts.forEach(account => {
+            if (account.transactions) {
+              account.transactions.forEach(tx => {
+                const cat = tx.category || 'other';
+                categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(tx.amount);
+              });
+            }
+          });
 
-  const [filteredCategories, setFilteredCategories] = useState(categoryData);
+          // Convert to array and calculate percentages
+          const totalSpend = Object.values(categoryTotals).reduce((a, b) => a + b, 0) || 1;
+          const categories = Object.entries(categoryTotals)
+            .map(([category, amount]) => ({
+              category: category.charAt(0).toUpperCase() + category.slice(1),
+              amount,
+              percentage: Math.round((amount / totalSpend) * 100),
+            }))
+            .sort((a, b) => b.amount - a.amount);
+
+          setCategoryData(categories);
+          setFilteredCategories(categories);
+
+          // Generate monthly data (simplified - using current month for now)
+          const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+          const currentMonthSpend = accounts.reduce((sum, acc) => sum + (acc.monthlySpend || 0), 0);
+          setMonthlyData([
+            { month: currentMonth, amount: currentMonthSpend, budget: 3000 },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {

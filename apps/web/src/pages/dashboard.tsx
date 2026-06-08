@@ -1,18 +1,58 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
+
+interface Account {
+  id: string;
+  name: string;
+  balance: number;
+  currency: string;
+  institution: string;
+  transactions?: any[];
+  monthlySpend?: number;
+}
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [accountCount, setAccountCount] = useState(0);
+  const [transactionCount, setTransactionCount] = useState(0);
+  const [monthlySpend, setMonthlySpend] = useState(0);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/signin');
     }
   }, [loading, isAuthenticated, router]);
+
+  // Load real data from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('user_accounts');
+        if (saved) {
+          const parsedAccounts = JSON.parse(saved) as Account[];
+          setAccounts(parsedAccounts);
+
+          // Calculate real metrics
+          const total = parsedAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+          const txCount = parsedAccounts.reduce((sum, acc) => sum + (acc.transactions?.length || 0), 0);
+          const spend = parsedAccounts.reduce((sum, acc) => sum + (acc.monthlySpend || 0), 0);
+
+          setTotalBalance(total);
+          setAccountCount(parsedAccounts.length);
+          setTransactionCount(txCount);
+          setMonthlySpend(spend);
+        }
+      } catch (error) {
+        console.error('Error loading accounts:', error);
+      }
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -45,11 +85,11 @@ export default function Dashboard() {
             {/* Net Worth Card */}
             <div className="group relative bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white/20 hover:border-blue-200/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
               <div className="absolute top-4 right-4 text-3xl">💰</div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Net Worth</h3>
+              <h3 className="text-sm font-semibold text-gray-600 mb-2">Total Balance</h3>
               <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-3">
-                $0.00
+                €{totalBalance.toFixed(2)}
               </p>
-              <p className="text-xs text-gray-500">Coming soon</p>
+              <p className="text-xs text-gray-500">{accountCount} account{accountCount !== 1 ? 's' : ''}</p>
               <div className="mt-4 h-1 bg-gradient-to-r from-blue-200 to-transparent rounded-full"></div>
             </div>
 
@@ -58,20 +98,20 @@ export default function Dashboard() {
               <div className="absolute top-4 right-4 text-3xl">🏦</div>
               <h3 className="text-sm font-semibold text-gray-600 mb-2">Connected Accounts</h3>
               <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-emerald-600 mb-3">
-                0
+                {accountCount}
               </p>
-              <p className="text-xs text-gray-500">Ready to connect</p>
+              <p className="text-xs text-gray-500">{accountCount === 0 ? 'Ready to connect' : 'Synced & active'}</p>
               <div className="mt-4 h-1 bg-gradient-to-r from-green-200 to-transparent rounded-full"></div>
             </div>
 
-            {/* Transactions Card */}
+            {/* Monthly Spend Card */}
             <div className="group relative bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white/20 hover:border-purple-200/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
               <div className="absolute top-4 right-4 text-3xl">💳</div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Transactions</h3>
+              <h3 className="text-sm font-semibold text-gray-600 mb-2">Monthly Spend</h3>
               <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-3">
-                0
+                €{monthlySpend.toFixed(2)}
               </p>
-              <p className="text-xs text-gray-500">This month</p>
+              <p className="text-xs text-gray-500">{transactionCount} transaction{transactionCount !== 1 ? 's' : ''}</p>
               <div className="mt-4 h-1 bg-gradient-to-r from-purple-200 to-transparent rounded-full"></div>
             </div>
           </div>
