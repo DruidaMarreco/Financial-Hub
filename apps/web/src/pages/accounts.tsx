@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "../hooks/useAuth";
 import Layout from "../components/Layout";
+import { BankConnectionModal } from "../components/BankConnectionModal";
 
 interface Transaction {
   id: string;
@@ -95,6 +96,7 @@ export default function AccountsPage() {
   });
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState<FormData>({
@@ -244,12 +246,20 @@ export default function AccountsPage() {
                 Manage all your financial accounts and payment methods
               </p>
             </div>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95"
-            >
-              + Add Account
-            </button>
+            <div className="flex gap-3 w-full md:w-auto">
+              <button
+                onClick={() => setShowBankModal(true)}
+                className="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                🔗 Connect Real Bank
+              </button>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                + Add Manual Account
+              </button>
+            </div>
           </div>
         </div>
 
@@ -686,6 +696,16 @@ export default function AccountsPage() {
             </div>
           </div>
         )}
+        {/* Bank Connection Modal */}
+        <BankConnectionModal
+          isOpen={showBankModal}
+          onClose={() => setShowBankModal(false)}
+          onSuccess={() => {
+            setShowBankModal(false);
+            // Trigger a refresh of accounts
+            setTimeout(() => window.location.reload(), 1500);
+          }}
+        />
       </Layout>
 
       <style>{`
