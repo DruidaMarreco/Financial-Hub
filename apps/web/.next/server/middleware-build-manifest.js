@@ -19,15 +19,15 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/accounts": [
+    "/signin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/accounts.js"
+      "static/chunks/pages/signin.js"
     ],
-    "/analytics": [
+    "/signup": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/analytics.js"
+      "static/chunks/pages/signup.js"
     ]
   },
   "ampFirstPages": []

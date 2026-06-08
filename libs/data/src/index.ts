@@ -13,3 +13,6 @@ export type {
 
 // Database utilities
 export * from './db/prisma.service';
+
+// Data module
+export { DataModule } from './data.module';
