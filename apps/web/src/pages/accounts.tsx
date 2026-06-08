@@ -65,13 +65,31 @@ const MEAL_CARD_PROVIDERS = [
   { value: 'multibanco', label: '🏧 Multibanco', desc: 'Direct card' },
 ];
 
+const normalizeAccount = (account: any): Account => {
+  return {
+    ...account,
+    monthlySpend: account.monthlySpend ?? 0,
+    icon: account.icon ?? '💳',
+    lastUpdated: account.lastUpdated ?? new Date().toLocaleDateString(),
+    transactions: account.transactions ?? [],
+    balanceHistory: account.balanceHistory ?? [{ date: new Date().toLocaleDateString(), balance: account.balance }],
+  };
+};
+
 export default function AccountsPage() {
   const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('user_accounts');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return Array.isArray(parsed) ? parsed.map(normalizeAccount) : [];
+        } catch {
+          return [];
+        }
+      }
     }
     return [];
   });
