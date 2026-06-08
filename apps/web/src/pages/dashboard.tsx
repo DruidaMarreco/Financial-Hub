@@ -1,11 +1,11 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import { useEffect } from 'react';
+import Layout from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Dashboard() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -35,34 +35,10 @@ export default function Dashboard() {
         <title>Dashboard - Financial Hub</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
-        {/* Navigation */}
-        <nav className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Financial Hub</h1>
-            <div className="flex gap-4 items-center">
-              <Link href="/accounts" className="text-gray-700 hover:text-gray-900 font-medium">
-                Accounts
-              </Link>
-              <Link href="/transactions" className="text-gray-700 hover:text-gray-900 font-medium">
-                Transactions
-              </Link>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </nav>
-
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}!</h2>
-            <p className="text-gray-600 mt-2">{user?.email}</p>
-          </div>
+      <Layout title={`Welcome back, ${user?.name}!`}>
+        <div className="mb-8">
+          <p className="text-gray-600">Email: {user?.email}</p>
+        </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-lg shadow">
@@ -105,8 +81,7 @@ export default function Dashboard() {
               </li>
             </ul>
           </div>
-        </div>
-      </div>
+      </Layout>
     </>
   );
 }
