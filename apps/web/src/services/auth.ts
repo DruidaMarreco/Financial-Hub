@@ -106,5 +106,8 @@ export function clearAuthToken() {
 }
 
 export function logout() {
-  clearAuthToken();
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('mock_user');
+  }
 }
