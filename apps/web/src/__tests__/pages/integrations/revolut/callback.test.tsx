@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import RevolutCallbackPage from './callback';
+import RevolutCallbackPage from '../../../../pages/integrations/revolut/callback';
 
 jest.mock('next/router');
 jest.mock('axios');
