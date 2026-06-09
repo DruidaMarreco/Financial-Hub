@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
-const DEV_MODE = true; // Set to false when API is ready
+// Use real API by default, unless NEXT_PUBLIC_DEV_MODE=true is set in .env
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true' || false;
 
 interface User {
   id: string;
@@ -37,15 +38,22 @@ export function useAuth(): AuthContextType {
         } else {
           // Production mode - validate with API
           if (token) {
-            // Validate token with API
-            // const response = await fetch('http://localhost:3001/auth/me', {
-            //   headers: { 'Authorization': `Bearer ${token}` }
-            // });
-            // if (response.ok) {
-            //   const userData = await response.json();
-            //   setUser(userData);
-            //   setIsAuthenticated(true);
-            // }
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (response.ok) {
+                const userData = await response.json();
+                setUser(userData);
+                setIsAuthenticated(true);
+              } else {
+                // Token invalid or expired
+                localStorage.removeItem('auth_token');
+              }
+            } catch (error) {
+              console.error('Failed to validate token:', error);
+              localStorage.removeItem('auth_token');
+            }
           }
         }
       } catch (error) {

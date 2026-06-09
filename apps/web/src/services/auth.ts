@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const DEV_MODE = true; // Enable dev mode for localStorage auth
+// Set to true to use localStorage mock data instead of real API
+// Set to false to connect to real backend API
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true' || false;
 
 export const authApi = axios.create({
   baseURL: `${API_URL}/auth`,
