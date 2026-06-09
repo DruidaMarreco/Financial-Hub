@@ -2,6 +2,27 @@
 
 A comprehensive financial data aggregation and portfolio management platform. Collect, analyze, and visualize your financial data from multiple sources in one unified dashboard.
 
+## 🚀 **Quick Start** (< 5 minutes)
+
+**Want to get up and running immediately?**
+
+### Linux/macOS:
+```bash
+bash setup.sh && npm run dev
+```
+
+### Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File setup.ps1
+npm run dev
+```
+
+Then open http://localhost:3000 and log in with:
+- **Email**: `demo@financialhub.io`
+- **Password**: `demo123456`
+
+👉 **See [docs/QUICK-START.md](./docs/QUICK-START.md) for detailed walkthrough**
+
 ## Architecture
 
 This is a monorepo project with the following structure:
