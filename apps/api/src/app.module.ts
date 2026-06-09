@@ -5,10 +5,20 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { IntelligenceModule } from './ml/intelligence.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { DatabaseModule } from './database/database.module';
 import { DataModule } from '@financial-hub/data';
 
 @Module({
-  imports: [DataModule, AuthModule, AccountsModule, TransactionsModule, AnalyticsModule, IntelligenceModule, IntegrationsModule],
+  imports: [
+    DataModule,
+    AuthModule,
+    AccountsModule,
+    TransactionsModule,
+    AnalyticsModule,
+    IntelligenceModule,
+    IntegrationsModule,
+    DatabaseModule,
+  ],
   controllers: [],
   providers: [],
 })
