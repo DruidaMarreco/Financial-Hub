@@ -70,13 +70,16 @@ export class RevolutService {
   }> {
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/auth/token`, {
-          grant_type: 'authorization_code',
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-        }),
+        this.httpService.post<{ access_token: string; refresh_token: string; expires_in: number }>(
+          `${this.baseUrl}/auth/token`,
+          {
+            grant_type: 'authorization_code',
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+          },
+        ),
       );
 
       return response.data;
@@ -100,12 +103,15 @@ export class RevolutService {
   }> {
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/auth/token`, {
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          client_id: clientId,
-          client_secret: clientSecret,
-        }),
+        this.httpService.post<{ access_token: string; refresh_token: string; expires_in: number }>(
+          `${this.baseUrl}/auth/token`,
+          {
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: clientId,
+            client_secret: clientSecret,
+          },
+        ),
       );
 
       return response.data;
@@ -122,14 +128,17 @@ export class RevolutService {
     try {
       const baseUrl = useSandbox ? this.sandboxUrl : this.baseUrl;
       const response = await firstValueFrom(
-        this.httpService.get(`${baseUrl}/accounts`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+        this.httpService.get<{ accounts?: RevolutAccount[] } | RevolutAccount[]>(
+          `${baseUrl}/accounts`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
           },
-        }),
+        ),
       );
 
-      return response.data.accounts || response.data;
+      return (response.data as any).accounts || response.data;
     } catch (error) {
       this.logger.error('Failed to fetch accounts:', error.response?.data);
       throw new BadRequestException('Failed to fetch Revolut accounts');
@@ -155,14 +164,17 @@ export class RevolutService {
       const url = `${baseUrl}/accounts/${accountId}/transactions${params.toString() ? '?' + params.toString() : ''}`;
 
       const response = await firstValueFrom(
-        this.httpService.get(url, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+        this.httpService.get<{ transactions?: RevolutTransaction[] } | RevolutTransaction[]>(
+          url,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
           },
-        }),
+        ),
       );
 
-      return response.data.transactions || response.data;
+      return (response.data as any).transactions || response.data;
     } catch (error) {
       this.logger.error('Failed to fetch transactions:', error.response?.data);
       throw new BadRequestException('Failed to fetch Revolut transactions');
@@ -172,11 +184,11 @@ export class RevolutService {
   /**
    * Get exchange rates from Revolut
    */
-  async getExchangeRates(accessToken: string, useSandbox = false): Promise<any> {
+  async getExchangeRates(accessToken: string, useSandbox = false): Promise<{ rates: Record<string, number> }> {
     try {
       const baseUrl = useSandbox ? this.sandboxUrl : this.baseUrl;
       const response = await firstValueFrom(
-        this.httpService.get(`${baseUrl}/rates`, {
+        this.httpService.get<{ rates: Record<string, number> }>(`${baseUrl}/rates`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },

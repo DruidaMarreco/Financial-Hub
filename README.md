@@ -2,6 +2,27 @@
 
 A comprehensive financial data aggregation and portfolio management platform. Collect, analyze, and visualize your financial data from multiple sources in one unified dashboard.
 
+## 🚀 **Quick Start** (< 5 minutes)
+
+**Want to get up and running immediately?**
+
+### Linux/macOS:
+```bash
+bash setup.sh && npm run dev
+```
+
+### Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File setup.ps1
+npm run dev
+```
+
+Then open http://localhost:3000 and log in with:
+- **Email**: `demo@financialhub.io`
+- **Password**: `demo123456`
+
+👉 **See [docs/QUICK-START.md](./docs/QUICK-START.md) for detailed walkthrough**
+
 ## Architecture
 
 This is a monorepo project with the following structure:
@@ -43,25 +64,87 @@ financial-hub/
 
 - Node.js >= 18
 - npm >= 9
-- PostgreSQL (for local development)
+- PostgreSQL >= 12 (local or Docker) OR Docker Desktop
 
-### Installation
+### Quick Start (Recommended)
+
+#### Linux/macOS
+```bash
+# Run the setup script (it handles everything!)
+bash setup.sh
+
+# Then start development servers
+npm run dev
+```
+
+#### Windows
+```powershell
+# Run the setup script (it handles everything!)
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Then start development servers
+npm run dev
+```
+
+The setup script will:
+- ✅ Verify Node.js version
+- ✅ Install dependencies
+- ✅ Create .env file (if needed)
+- ✅ Start PostgreSQL via Docker (if available)
+- ✅ Run database migrations
+- ✅ Build shared libraries
+
+**Result**: Frontend at http://localhost:3000, API at http://localhost:3001
+
+### Manual Setup
+
+If you prefer to set up manually:
 
 ```bash
-# Clone and install dependencies
+# Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env.local
+# Create environment file
+cp .env.example .env
 
-# Run database migrations
-npm run migrate --workspace=apps/api
+# Start PostgreSQL (choose one):
+#   Option A: Docker
+docker-compose up -d postgres
+
+#   Option B: Local PostgreSQL (see docs/DATABASE_SETUP.md)
+
+# Run migrations
+npm run db:migrate
 
 # Start development servers
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000` and the API at `http://localhost:3001`.
+### Database Management
+
+```bash
+# View the database in Prisma Studio
+npm run db:studio
+
+# Create a new migration (after schema changes)
+npm run db:migrate
+
+# Deploy migrations (production)
+npm run db:migrate:deploy
+
+# Reset database (⚠️ deletes all data)
+npm run db:migrate:reset
+```
+
+### Database Setup Details
+
+For detailed database setup instructions, including:
+- Installing PostgreSQL locally (macOS, Windows, Linux)
+- Using Docker for PostgreSQL
+- Troubleshooting connection issues
+- Seeding initial data
+
+See [docs/DATABASE_SETUP.md](./docs/DATABASE_SETUP.md)
 
 ## Project Structure
 

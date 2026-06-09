@@ -4,14 +4,21 @@
   "description": "A comprehensive financial data aggregation and portfolio management platform",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "libs/*"
+    "libs/*",
+    "apps/*"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "test:integration": "bash test-integration.sh",
+    "lint": "npm run lint --workspaces",
+    "db:migrate": "npx prisma migrate dev --schema=libs/data/prisma/schema.prisma",
+    "db:migrate:deploy": "npx prisma migrate deploy --schema=libs/data/prisma/schema.prisma",
+    "db:migrate:reset": "npx prisma migrate reset --schema=libs/data/prisma/schema.prisma",
+    "db:seed": "npx prisma db seed --schema=libs/data/prisma/schema.prisma",
+    "db:studio": "npx prisma studio --schema=libs/data/prisma/schema.prisma",
+    "prisma:generate": "npx prisma generate --schema=libs/data/prisma/schema.prisma"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

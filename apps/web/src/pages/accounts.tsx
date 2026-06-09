@@ -99,6 +99,17 @@ export default function AccountsPage() {
   const [showBankModal, setShowBankModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [filterType, setFilterType] = useState('all');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState<FormData>({
+    accountName: '',
+    bank: 'revolut',
+    accountType: 'checking',
+    balance: '',
+    currency: 'EUR',
+    monthlySpend: '0',
+    mealCardProvider: 'sodexo',
+    monthlyAllowance: '',
+  });
   const [formData, setFormData] = useState<FormData>({
     accountName: '',
     bank: 'revolut',
@@ -183,6 +194,55 @@ export default function AccountsPage() {
   const handleDeleteAccount = (id: string) => {
     setAccounts(accounts.filter(acc => acc.id !== id));
     setSelectedAccount(null);
+    setIsEditing(false);
+  };
+
+  const openAccountDetails = (account: Account) => {
+    setSelectedAccount(account);
+    setIsEditing(false);
+    setEditFormData({
+      accountName: account.name,
+      bank: account.institution,
+      accountType: account.type,
+      balance: String(account.balance),
+      currency: account.currency,
+      monthlySpend: String(account.monthlySpend ?? 0),
+      mealCardProvider: account.mealCardSpecific?.provider || 'sodexo',
+      monthlyAllowance: String(account.mealCardSpecific?.monthlyAllowance ?? ''),
+    });
+  };
+
+  const handleEditAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAccount || !editFormData.accountName || !editFormData.balance) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    const bankOption = BANK_OPTIONS.find(b => b.value === editFormData.bank);
+    const isMealCard = editFormData.accountType === 'meal-card' || editFormData.bank === 'meal-card';
+    setAccounts(accounts.map(acc => {
+      if (acc.id !== selectedAccount.id) return acc;
+      return {
+        ...acc,
+        name: editFormData.accountName,
+        type: editFormData.accountType,
+        balance: parseFloat(editFormData.balance),
+        currency: editFormData.currency,
+        institution: editFormData.bank,
+        icon: bankOption?.emoji || acc.icon,
+        monthlySpend: parseFloat(editFormData.monthlySpend || '0'),
+        lastUpdated: new Date().toLocaleDateString(),
+        ...(isMealCard ? {
+          mealCardSpecific: {
+            provider: editFormData.mealCardProvider || 'sodexo',
+            expiryDate: acc.mealCardSpecific?.expiryDate || '2026-12-31',
+            monthlyAllowance: parseFloat(editFormData.monthlyAllowance || '0'),
+          },
+        } : { mealCardSpecific: undefined }),
+      };
+    }));
+    setSelectedAccount(null);
+    setIsEditing(false);
   };
 
   const handleUpdateBalance = (id: string, newBalance: number) => {
@@ -503,7 +563,7 @@ export default function AccountsPage() {
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
                 <div
-                  onClick={() => setSelectedAccount(account)}
+                  onClick={() => openAccountDetails(account)}
                   className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-blue-400 hover:shadow-xl transition-all cursor-pointer group h-full"
                 >
                   <div className="flex justify-between items-start mb-4">
@@ -551,7 +611,7 @@ export default function AccountsPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedAccount(account);
+                        openAccountDetails(account);
                       }}
                       className="w-full px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg transition-all active:scale-95"
                     >
@@ -573,125 +633,294 @@ export default function AccountsPage() {
                   <span className="text-3xl">{selectedAccount.icon}</span>
                   <h3 className="text-xl font-bold text-gray-900">{selectedAccount.name}</h3>
                 </div>
-                <button
-                  onClick={() => setSelectedAccount(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  {isEditing && (
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Editing</span>
+                  )}
+                  <button
+                    onClick={() => { setSelectedAccount(null); setIsEditing(false); }}
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Balance Display */}
-                <div className="p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
-                  <p className="text-gray-600 text-sm mb-1">Current Balance</p>
-                  <p className="text-4xl font-bold text-gray-900">
-                    {selectedAccount.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedAccount.currency}
-                  </p>
-                </div>
+              <div className="p-6 space-y-5">
+                {isEditing ? (
+                  /* ── EDIT FORM ── */
+                  <form onSubmit={handleEditAccount} className="space-y-4">
+                    <p className="text-sm text-gray-500 mb-1">Edit all account details below.</p>
 
-                {/* Balance Update */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Update Balance</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      id="balance-input"
-                      defaultValue={selectedAccount.balance}
-                      placeholder="Enter new balance"
-                      className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                    <button
-                      onClick={() => {
-                        const input = document.getElementById('balance-input') as HTMLInputElement;
-                        if (input?.value) {
-                          handleUpdateBalance(selectedAccount.id, parseFloat(input.value));
-                          setSelectedAccount({ ...selectedAccount, balance: parseFloat(input.value) });
-                        }
-                      }}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all active:scale-95"
-                    >
-                      Update
-                    </button>
-                  </div>
-                </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Account Name</label>
+                      <input
+                        type="text"
+                        value={editFormData.accountName}
+                        onChange={(e) => setEditFormData({ ...editFormData, accountName: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        required
+                      />
+                    </div>
 
-                {/* Meal Card Specific Details */}
-                {selectedAccount.mealCardSpecific && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
-                    <h4 className="font-semibold text-yellow-900">🍽️ Meal Card Details</h4>
                     <div>
-                      <p className="text-sm text-yellow-700">Provider</p>
-                      <p className="font-semibold text-yellow-900 capitalize">{selectedAccount.mealCardSpecific.provider}</p>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Bank / Provider</label>
+                      <select
+                        value={editFormData.bank}
+                        onChange={(e) => setEditFormData({ ...editFormData, bank: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      >
+                        {BANK_OPTIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                      </select>
                     </div>
+
                     <div>
-                      <p className="text-sm text-yellow-700">Monthly Allowance</p>
-                      <p className="font-semibold text-yellow-900">{selectedAccount.mealCardSpecific.monthlyAllowance} €</p>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Account Type</label>
+                      <select
+                        value={editFormData.accountType}
+                        onChange={(e) => setEditFormData({ ...editFormData, accountType: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      >
+                        {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+                      </select>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Balance</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editFormData.balance}
+                          onChange={(e) => setEditFormData({ ...editFormData, balance: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Currency</label>
+                        <select
+                          value={editFormData.currency}
+                          onChange={(e) => setEditFormData({ ...editFormData, currency: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        >
+                          <option value="EUR">EUR (€)</option>
+                          <option value="USD">USD ($)</option>
+                          <option value="GBP">GBP (£)</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div>
-                      <p className="text-sm text-yellow-700">Expiry Date</p>
-                      <p className="font-semibold text-yellow-900">{selectedAccount.mealCardSpecific.expiryDate}</p>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Monthly Spend (est.)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editFormData.monthlySpend}
+                        onChange={(e) => setEditFormData({ ...editFormData, monthlySpend: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      />
                     </div>
-                  </div>
+
+                    {(editFormData.bank === 'meal-card' || editFormData.accountType === 'meal-card') && (
+                      <div className="space-y-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-xs font-semibold text-yellow-900">🍽️ Meal Card Details</p>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">Provider</label>
+                          <select
+                            value={editFormData.mealCardProvider}
+                            onChange={(e) => setEditFormData({ ...editFormData, mealCardProvider: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-yellow-300 rounded-lg outline-none text-sm"
+                          >
+                            {MEAL_CARD_PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">Monthly Allowance</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editFormData.monthlyAllowance}
+                            onChange={(e) => setEditFormData({ ...editFormData, monthlyAllowance: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-yellow-300 rounded-lg outline-none text-sm"
+                            placeholder="e.g., 150.00"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all active:scale-95"
+                      >
+                        ✅ Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* ── READ-ONLY VIEW ── */
+                  <>
+                    {/* Balance Display */}
+                    <div className="p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Current Balance</p>
+                      <p className="text-4xl font-bold text-gray-900">
+                        {selectedAccount.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedAccount.currency}
+                      </p>
+                    </div>
+
+                    {/* Meal Card Specific Details */}
+                    {selectedAccount.mealCardSpecific && (
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg space-y-2">
+                        <h4 className="font-semibold text-yellow-900">🍽️ Meal Card Details</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <p className="text-yellow-700">Provider</p>
+                            <p className="font-semibold text-yellow-900 capitalize">{selectedAccount.mealCardSpecific.provider}</p>
+                          </div>
+                          <div>
+                            <p className="text-yellow-700">Monthly Allowance</p>
+                            <p className="font-semibold text-yellow-900">{selectedAccount.mealCardSpecific.monthlyAllowance} €</p>
+                          </div>
+                          <div>
+                            <p className="text-yellow-700">Expiry</p>
+                            <p className="font-semibold text-yellow-900">{selectedAccount.mealCardSpecific.expiryDate}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Info */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {[
+                        { label: 'Institution', value: selectedAccount.institution },
+                        { label: 'Type', value: selectedAccount.type },
+                        { label: 'Currency', value: selectedAccount.currency },
+                        { label: 'Monthly Spend', value: `${selectedAccount.monthlySpend.toFixed(2)} €` },
+                        { label: 'Last Updated', value: selectedAccount.lastUpdated },
+                        { label: 'Status', value: selectedAccount.status },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="p-2 bg-gray-50 rounded-lg">
+                          <p className="text-xs text-gray-500">{label}</p>
+                          <p className="font-semibold text-gray-900 capitalize truncate">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── Cash Flow (checking / savings only) ────────── */}
+                    {(selectedAccount.type === 'checking' || selectedAccount.type === 'savings') && (() => {
+                      const now = new Date()
+                      const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                      const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+                      const moLabel = MONTHS[now.getMonth()]
+                      const moTxs = (selectedAccount.transactions || []).filter(tx => tx.date?.startsWith(curKey))
+                      const moIncome   = moTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0)
+                      const moExpenses = moTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
+                      const netFlow    = moIncome - moExpenses
+
+                      // Top categories this month
+                      const catMap: Record<string, number> = {}
+                      moTxs.filter(t => t.amount < 0).forEach(t => {
+                        const c = t.category || 'other'
+                        catMap[c] = (catMap[c] ?? 0) + Math.abs(t.amount)
+                      })
+                      const topCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 4)
+                      const maxCat  = topCats[0]?.[1] || 1
+
+                      const CAT_EMOJI: Record<string, string> = {
+                        groceries: '🛒', dining: '🍽️', coffee: '☕', transport: '🚌',
+                        entertainment: '🎬', shopping: '🛍️', healthcare: '💊',
+                        utilities: '💡', income: '💰', savings: '🏦', other: '💳',
+                      }
+                      const fmtEur = (n: number) =>
+                        new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(Math.abs(n))
+
+                      return (
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">{moLabel} Cash Flow</p>
+
+                          {/* Income / Expenses / Net */}
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Income</p>
+                              <p className="text-sm font-bold text-emerald-600 tabular-nums">
+                                {moIncome > 0 ? `+${fmtEur(moIncome)}` : '—'}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Spent</p>
+                              <p className="text-sm font-bold text-red-500 tabular-nums">
+                                {moExpenses > 0 ? `-${fmtEur(moExpenses)}` : '—'}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Net</p>
+                              <p className={`text-sm font-bold tabular-nums ${netFlow >= 0 ? 'text-blue-600' : 'text-orange-500'}`}>
+                                {netFlow !== 0 ? `${netFlow > 0 ? '+' : ''}${fmtEur(netFlow)}` : '—'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Spending by category */}
+                          {topCats.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 mb-2">Top Spending</p>
+                              <div className="space-y-2">
+                                {topCats.map(([cat, amount]) => (
+                                  <div key={cat}>
+                                    <div className="flex justify-between text-xs mb-0.5">
+                                      <span className="font-medium text-gray-700">{CAT_EMOJI[cat] || '💳'} {cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+                                      <span className="font-semibold text-gray-900 tabular-nums">{fmtEur(amount)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                      <div
+                                        className="h-full bg-blue-500 rounded-full"
+                                        style={{ width: `${Math.round((amount / maxCat) * 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {moTxs.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">No transactions this month yet</p>
+                          )}
+                        </div>
+                      )
+                    })()}
+
+                    {/* Buttons */}
+                    <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all active:scale-95"
+                      >
+                        ✏️ Edit Account
+                      </button>
+                      <button
+                        onClick={() => { setSelectedAccount(null); setIsEditing(false); }}
+                        className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-all"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAccount(selectedAccount.id)}
+                        className="w-full px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition-all active:scale-95"
+                      >
+                        🗑️ Remove Account
+                      </button>
+                    </div>
+                  </>
                 )}
-
-                {/* Account Info */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">Account Information</h4>
-                  <div>
-                    <p className="text-sm text-gray-600">Institution</p>
-                    <p className="font-semibold text-gray-900 capitalize">{selectedAccount.institution}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Type</p>
-                    <p className="font-semibold text-gray-900 capitalize">{selectedAccount.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Currency</p>
-                    <p className="font-semibold text-gray-900">{selectedAccount.currency}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold capitalize">
-                      {selectedAccount.status}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Last Updated</p>
-                    <p className="font-semibold text-gray-900">{selectedAccount.lastUpdated}</p>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-xs text-gray-600 mb-1">Monthly Spend</p>
-                    <p className="font-bold text-gray-900">{selectedAccount.monthlySpend.toFixed(2)} €</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 mb-1">Records</p>
-                    <p className="font-bold text-gray-900">{selectedAccount.balanceHistory.length}</p>
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex flex-col gap-2 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setSelectedAccount(null)}
-                    className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-all"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleDeleteAccount(selectedAccount.id);
-                    }}
-                    className="w-full px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition-all active:scale-95"
-                  >
-                    🗑️ Remove Account
-                  </button>
-                </div>
               </div>
             </div>
           </div>

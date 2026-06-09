@@ -51,7 +51,7 @@ export class PlaidService {
         throw new BadRequestException('Failed to create Plaid link token');
       }
 
-      const data = await response.json();
+      const data = await response.json() as { link_token: string };
       return data;
     } catch (error) {
       console.error('Plaid error:', error);
@@ -81,7 +81,7 @@ export class PlaidService {
         throw new BadRequestException('Failed to exchange Plaid token');
       }
 
-      const data = await response.json();
+      const data = await response.json() as { access_token: string; item_id: string };
       return {
         access_token: data.access_token,
         item_id: data.item_id,
@@ -114,7 +114,7 @@ export class PlaidService {
         throw new BadRequestException('Failed to fetch Plaid accounts');
       }
 
-      const data = await response.json();
+      const data = await response.json() as { accounts: any[] };
       return data.accounts;
     } catch (error) {
       console.error('Plaid error:', error);
@@ -149,7 +149,7 @@ export class PlaidService {
         throw new BadRequestException('Failed to fetch Plaid transactions');
       }
 
-      const data = await response.json();
+      const data = await response.json() as { transactions: any[] };
       return data.transactions;
     } catch (error) {
       console.error('Plaid error:', error);

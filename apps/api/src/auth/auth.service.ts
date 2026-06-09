@@ -115,7 +115,7 @@ export class AuthService {
         email,
       },
       {
-        expiresIn: process.env.JWT_EXPIRATION || '24h',
+        expiresIn: (process.env.JWT_EXPIRATION || '24h') as any,
       },
     );
   }

@@ -19,7 +19,13 @@ jobs:
       - run: npm ci
       - run: npm run prisma:generate --workspace=@financial-hub/data
       - run: npm run lint --workspaces || true
-      - run: npm run build --workspaces
+      # Build libs first so API/web can resolve workspace packages
+      - run: npm run build --workspace=libs/common
+      - run: npm run build --workspace=libs/core
+      - run: npm run build --workspace=libs/data
+      # Then build the apps
+      - run: npm run build --workspace=apps/api
+      - run: npm run build --workspace=apps/web
 
   test-unit:
     name: Unit Tests
@@ -47,7 +53,12 @@ jobs:
           node-version: '18'
           cache: 'npm'
       - run: npm ci
-      - run: npm run build --workspaces
+      - run: npm run prisma:generate --workspace=@financial-hub/data
+      # Build libs first, then apps
+      - run: npm run build --workspace=libs/common
+      - run: npm run build --workspace=libs/core
+      - run: npm run build --workspace=libs/data
+      - run: npm run build --workspace=apps/api
       - name: Build Next.js
         run: npm run build --workspace=apps/web
         env:

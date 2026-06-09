@@ -8,6 +8,14 @@ node_modules/
 /build
 /.next
 /out
+**/dist/
+**/apps/web/.next/
+apps/web/.next/
+**/*.tsbuildinfo
+# Compiled JS in library source dirs (build artifacts)
+libs/**/*.js
+libs/**/*.js.map
+libs/**/*.d.ts.map
 
 # Testing
 /coverage

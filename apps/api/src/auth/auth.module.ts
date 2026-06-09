@@ -12,7 +12,7 @@ import { DataModule } from '@financial-hub/data';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '24h' },
+      signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '24h') as any },
     }),
   ],
   controllers: [AuthController],
