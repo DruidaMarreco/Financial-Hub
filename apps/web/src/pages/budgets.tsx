@@ -202,8 +202,12 @@ export default function BudgetsPage() {
       .map(tx => ({ ...tx, accountName: a.name, accountIcon: a.icon }))
   )
 
-  const incomeTxs  = [...thisMo.filter(tx => tx.amount > 0)].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  const expenseTxs = thisMo.filter(tx => tx.amount < 0)
+  const todayIso = now.toISOString().slice(0, 10)
+  const allIncomeTxs = [...thisMo.filter(tx => tx.amount > 0)].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Confirmed = already occurred (date ≤ today); Projected = future-dated
+  const incomeTxs      = allIncomeTxs.filter(tx => tx.date <= todayIso)
+  const projectedTxs   = allIncomeTxs.filter(tx => tx.date >  todayIso)
+  const expenseTxs     = thisMo.filter(tx => tx.amount < 0)
 
   const totalIncome   = incomeTxs.reduce((s, tx) => s + tx.amount, 0)
   const totalExpenses = expenseTxs.reduce((s, tx) => s + Math.abs(tx.amount), 0)
@@ -321,7 +325,9 @@ export default function BudgetsPage() {
             <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl p-5 shadow-sm">
               <p className="text-emerald-100 text-xs font-semibold mb-1">💰 Income</p>
               <p className="text-2xl font-bold text-white">{totalIncome > 0 ? eur(totalIncome) : '—'}</p>
-              <p className="text-emerald-200 text-xs mt-1">{incomeTxs.length} source{incomeTxs.length !== 1 ? 's' : ''}</p>
+              <p className="text-emerald-200 text-xs mt-1">
+                {incomeTxs.length} confirmed{projectedTxs.length > 0 ? ` · ${projectedTxs.length} projected` : ''}
+              </p>
             </div>
             <div className="bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl p-5 shadow-sm">
               <p className="text-red-100 text-xs font-semibold mb-1">💸 Expenses</p>
@@ -362,7 +368,7 @@ export default function BudgetsPage() {
               </button>
             </div>
 
-            {incomeTxs.length === 0 ? (
+            {allIncomeTxs.length === 0 ? (
               <div className="px-6 py-10 text-center">
                 <div className="text-4xl mb-3">💰</div>
                 <p className="font-semibold text-gray-800 mb-1">No income recorded this month</p>
@@ -379,6 +385,7 @@ export default function BudgetsPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
+                {/* Confirmed income */}
                 {incomeTxs.map(tx => (
                   <div key={tx.id} className="flex items-center gap-4 px-6 py-3">
                     <span className="text-2xl">💰</span>
@@ -389,8 +396,34 @@ export default function BudgetsPage() {
                     <span className="text-base font-bold text-emerald-600 tabular-nums">+{eur(tx.amount)}</span>
                   </div>
                 ))}
+
+                {/* Projected (future-dated) income */}
+                {projectedTxs.length > 0 && (
+                  <>
+                    <div className="px-6 py-2 bg-blue-50/60 flex items-center gap-2">
+                      <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">🔮 Projected Income</span>
+                      <span className="text-xs text-blue-500">· future-dated, not yet received</span>
+                    </div>
+                    {projectedTxs.map(tx => (
+                      <div key={tx.id} className="flex items-center gap-4 px-6 py-3 bg-blue-50/30 border-l-4 border-blue-300">
+                        <span className="text-2xl opacity-60">🔮</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-blue-800 truncate">{tx.merchant}</p>
+                          <p className="text-xs text-blue-400">{tx.date} · {tx.accountName} · projected</p>
+                        </div>
+                        <span className="text-base font-bold text-blue-600 tabular-nums opacity-75">+{eur(tx.amount)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
                 <div className="px-6 py-3 bg-emerald-50/60 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-gray-700">Total income this month</span>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-700">Confirmed income</span>
+                    {projectedTxs.length > 0 && (
+                      <p className="text-xs text-blue-500">+{eur(projectedTxs.reduce((s, t) => s + t.amount, 0))} projected</p>
+                    )}
+                  </div>
                   <span className="text-lg font-bold text-emerald-700 tabular-nums">+{eur(totalIncome)}</span>
                 </div>
               </div>

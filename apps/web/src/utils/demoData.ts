@@ -1,426 +1,343 @@
 export interface Transaction {
-  id: string;
-  date: string;
-  merchant: string;
-  amount: number;
-  category: string;
-  description: string;
+  id: string
+  date: string
+  merchant: string
+  amount: number
+  category: string
+  description: string
 }
 
 export interface BalancePoint {
-  date: string;
-  balance: number;
+  date: string
+  balance: number
 }
 
 export interface MealCardSpecific {
-  provider?: string;
-  expiryDate?: string;
-  monthlyAllowance?: number;
+  provider?: string
+  expiryDate?: string
+  monthlyAllowance?: number
 }
 
 export interface Account {
-  id: string;
-  name: string;
-  type: string;
-  balance: number;
-  currency: string;
-  institution: string;
-  status: string;
-  icon: string;
-  lastUpdated: string;
-  monthlySpend: number;
-  transactions: Transaction[];
-  balanceHistory: BalancePoint[];
-  mealCardSpecific?: MealCardSpecific;
+  id: string
+  name: string
+  type: string
+  balance: number
+  currency: string
+  institution: string
+  status: string
+  icon: string
+  lastUpdated: string
+  monthlySpend: number
+  transactions: Transaction[]
+  balanceHistory: BalancePoint[]
+  mealCardSpecific?: MealCardSpecific
 }
+
+// ── Config types ──────────────────────────────────────────────────────────────
+
+export interface DemoAccountConfig {
+  id: string
+  name: string
+  type: 'checking' | 'savings' | 'investment' | 'meal-card'
+  institution: string
+  icon: string
+  balance: number
+  include: boolean
+  monthlyAllowance?: number   // meal card
+  mealProvider?: string       // meal card
+}
+
+export interface DemoConfig {
+  accounts: DemoAccountConfig[]
+  daysOfHistory: number
+}
+
+export const DEFAULT_DEMO_CONFIG: DemoConfig = {
+  accounts: [
+    { id: 'revolut',    name: 'My Revolut',          type: 'checking',   institution: 'revolut',   icon: '🟦', balance: 2450.80, include: true },
+    { id: 'savings',    name: 'Emergency Fund',       type: 'savings',    institution: 'cgd',       icon: '🏦', balance: 8200,    include: true },
+    { id: 'investment', name: 'ETF Portfolio',        type: 'investment', institution: 'other',     icon: '📈', balance: 15200,   include: false },
+    { id: 'meal-card',  name: 'Sodexo Meal Card',     type: 'meal-card',  institution: 'meal-card', icon: '🍽️', balance: 135.50,  include: true, monthlyAllowance: 150, mealProvider: 'sodexo' },
+  ],
+  daysOfHistory: 90,
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function subDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() - days)
+  return d.toISOString().slice(0, 10)
 }
 
-export function generateDemoData(): Account[] {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const currentYearMonth = todayStr.slice(0, 7);
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
-  // Build 90 days of transactions for Account 1
-  const acc1Transactions: Transaction[] = [];
+function isoDate(y: number, m: number, day: number): string {
+  return new Date(y, m, day).toISOString().slice(0, 10)
+}
 
-  for (let i = 0; i < 90; i++) {
-    const dateStr = subDays(todayStr, i);
-    const dateObj = new Date(dateStr);
-    const dayOfMonth = dateObj.getDate();
+// Deterministic seeded "pseudo-random" — avoids Math.random for stable demo data
+function seededPick<T>(arr: T[], seed: number): T {
+  return arr[Math.abs(seed) % arr.length]
+}
 
-    // Coffee: i%3===0
+// ── Checking account transactions ─────────────────────────────────────────────
+
+function generateCheckingTransactions(prefix: string, days: number, todayStr: string): Transaction[] {
+  const txs: Transaction[] = []
+
+  for (let i = 0; i < days; i++) {
+    const dateStr = subDays(todayStr, i)
+    const d       = new Date(dateStr)
+    const day     = d.getDate()
+
+    // Coffee: every 3 days
     if (i % 3 === 0) {
-      const coffeeOptions: [string, number][] = [
-        ['Delta Q', -2.50],
-        ['Starbucks', -4.80],
-        ['Pastelaria Local', -1.80],
-      ];
-      const [merchant, amount] = coffeeOptions[Math.floor(i / 3) % 3];
-      acc1Transactions.push({
-        id: `demo-r1-coffee-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'coffee',
-        description: `${merchant} purchase`,
-      });
+      const opts: [string, number][] = [['Delta Q', -2.50], ['Starbucks', -4.80], ['Pastelaria Local', -1.80]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 3))
+      txs.push({ id: `${prefix}-coffee-${i}`, date: dateStr, merchant: m, amount: amt, category: 'coffee', description: `${m} purchase` })
     }
 
-    // Groceries: i%4===0
+    // Groceries: every 4 days
     if (i % 4 === 0) {
-      const groceryOptions: [string, number][] = [
-        ['Pingo Doce', -65],
-        ['Continente', -89],
-        ['Lidl', -43],
-        ['Aldi', -38],
-      ];
-      const [merchant, amount] = groceryOptions[Math.floor(i / 4) % 4];
-      acc1Transactions.push({
-        id: `demo-r1-groc1-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'groceries',
-        description: `${merchant} groceries`,
-      });
+      const opts: [string, number][] = [['Pingo Doce', -65], ['Continente', -89], ['Lidl', -43], ['Aldi', -38]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 4))
+      txs.push({ id: `${prefix}-groc1-${i}`, date: dateStr, merchant: m, amount: amt, category: 'groceries', description: `${m} groceries` })
     }
 
-    // More groceries: i%7===3
+    // More groceries: every 7 days offset 3
     if (i % 7 === 3) {
-      const groceryOptions: [string, number][] = [
-        ['Pingo Doce', -65],
-        ['Continente', -89],
-        ['Lidl', -43],
-        ['Aldi', -38],
-      ];
-      const [merchant, amount] = groceryOptions[Math.floor(i / 7) % 4];
-      acc1Transactions.push({
-        id: `demo-r1-groc2-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'groceries',
-        description: `${merchant} groceries`,
-      });
+      const opts: [string, number][] = [['Pingo Doce', -52], ['Mercadona', -71], ['Lidl', -38], ['Aldi', -45]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 7))
+      txs.push({ id: `${prefix}-groc2-${i}`, date: dateStr, merchant: m, amount: amt, category: 'groceries', description: `${m} groceries` })
     }
 
-    // Dining: i%3===1
+    // Dining: every 3 days offset 1
     if (i % 3 === 1) {
-      const diningOptions: [string, number][] = [
-        ["McDonald's", -9.50],
-        ['Nando\'s Lisboa', -18.90],
-        ['Tasca do Chico', -24.50],
-        ['Glovo', -16.50],
-      ];
-      const [merchant, amount] = diningOptions[Math.floor(i / 3) % 4];
-      acc1Transactions.push({
-        id: `demo-r1-dining-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'dining',
-        description: `${merchant} meal`,
-      });
+      const opts: [string, number][] = [["McDonald's", -9.50], ["Nando's Lisboa", -18.90], ['Tasca do Chico', -24.50], ['Glovo', -16.50]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 3))
+      txs.push({ id: `${prefix}-dining-${i}`, date: dateStr, merchant: m, amount: amt, category: 'dining', description: `${m} meal` })
     }
 
-    // Transport: i%3===2
+    // Transport: every 3 days offset 2
     if (i % 3 === 2) {
-      const transportOptions: [string, number][] = [
-        ['Uber', -8.40],
-        ['Carris Metro', -1.65],
-        ['Bolt', -6.80],
-      ];
-      const [merchant, amount] = transportOptions[Math.floor(i / 3) % 3];
-      acc1Transactions.push({
-        id: `demo-r1-transport-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'transport',
-        description: `${merchant} ride`,
-      });
+      const opts: [string, number][] = [['Uber', -8.40], ['Carris Metro', -1.65], ['Bolt', -6.80]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 3))
+      txs.push({ id: `${prefix}-transport-${i}`, date: dateStr, merchant: m, amount: amt, category: 'transport', description: `${m} ride` })
     }
 
-    // Shopping: i%14===5
+    // Shopping: every 14 days offset 5
     if (i % 14 === 5) {
-      const shoppingOptions: [string, number][] = [
-        ['Amazon', -34.90],
-        ['Zara', -59.90],
-        ['H&M', -29.90],
-      ];
-      const [merchant, amount] = shoppingOptions[Math.floor(i / 14) % 3];
-      acc1Transactions.push({
-        id: `demo-r1-shopping-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'shopping',
-        description: `${merchant} purchase`,
-      });
+      const opts: [string, number][] = [['Amazon', -34.90], ['Zara', -59.90], ['H&M', -29.90]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 14))
+      txs.push({ id: `${prefix}-shopping-${i}`, date: dateStr, merchant: m, amount: amt, category: 'shopping', description: `${m} purchase` })
     }
 
-    // Healthcare: i%30===10
+    // Healthcare: every 30 days offset 10
     if (i % 30 === 10) {
-      const healthOptions: [string, number][] = [
-        ['Farmácia Moderna', -18.50],
-        ['Farmácia Saúde', -12.90],
-      ];
-      const [merchant, amount] = healthOptions[Math.floor(i / 30) % 2];
-      acc1Transactions.push({
-        id: `demo-r1-health-${i}`,
-        date: dateStr,
-        merchant,
-        amount,
-        category: 'healthcare',
-        description: `${merchant} purchase`,
-      });
+      const opts: [string, number][] = [['Farmácia Moderna', -18.50], ['Farmácia Saúde', -12.90]]
+      const [m, amt] = seededPick(opts, Math.floor(i / 30))
+      txs.push({ id: `${prefix}-health-${i}`, date: dateStr, merchant: m, amount: amt, category: 'healthcare', description: `${m} purchase` })
     }
 
-    // Salary on 1st of each month
-    if (dayOfMonth === 1) {
-      acc1Transactions.push({
-        id: `demo-r1-salary-${dateStr}`,
-        date: dateStr,
-        merchant: 'Empresa Lda',
-        amount: 2800,
-        category: 'income',
-        description: 'Monthly salary',
-      });
+    // Monthly: salary on 1st
+    if (day === 1) {
+      txs.push({ id: `${prefix}-salary-${dateStr}`, date: dateStr, merchant: 'Empresa Lda', amount: 2800, category: 'income', description: 'Monthly salary' })
     }
 
-    // Netflix on 5th
-    if (dayOfMonth === 5) {
-      acc1Transactions.push({
-        id: `demo-r1-netflix-${dateStr}`,
-        date: dateStr,
-        merchant: 'Netflix',
-        amount: -15.99,
-        category: 'entertainment',
-        description: 'Netflix subscription',
-      });
-    }
+    // Subscriptions on fixed days
+    if (day === 5)  txs.push({ id: `${prefix}-netflix-${dateStr}`,  date: dateStr, merchant: 'Netflix',     amount: -15.99, category: 'entertainment', description: 'Netflix subscription' })
+    if (day === 6)  txs.push({ id: `${prefix}-spotify-${dateStr}`,  date: dateStr, merchant: 'Spotify',     amount: -9.99,  category: 'entertainment', description: 'Spotify subscription' })
+    if (day === 7)  txs.push({ id: `${prefix}-icloud-${dateStr}`,   date: dateStr, merchant: 'Apple iCloud',amount: -2.99,  category: 'entertainment', description: 'iCloud storage' })
+    if (day === 15) txs.push({ id: `${prefix}-edp-${dateStr}`,      date: dateStr, merchant: 'EDP Energia', amount: -89,    category: 'utilities',     description: 'Electricity bill' })
+    if (day === 16) txs.push({ id: `${prefix}-nos-${dateStr}`,      date: dateStr, merchant: 'NOS Fibra',   amount: -45,    category: 'utilities',     description: 'Internet bill' })
+    if (day === 17) txs.push({ id: `${prefix}-agua-${dateStr}`,     date: dateStr, merchant: 'Água EPAL',   amount: -28,    category: 'utilities',     description: 'Water bill' })
+  }
 
-    // Spotify on 6th
-    if (dayOfMonth === 6) {
-      acc1Transactions.push({
-        id: `demo-r1-spotify-${dateStr}`,
-        date: dateStr,
-        merchant: 'Spotify',
-        amount: -9.99,
-        category: 'entertainment',
-        description: 'Spotify subscription',
-      });
-    }
+  txs.sort((a, b) => b.date.localeCompare(a.date))
+  return txs
+}
 
-    // Apple iCloud on 7th
-    if (dayOfMonth === 7) {
-      acc1Transactions.push({
-        id: `demo-r1-icloud-${dateStr}`,
-        date: dateStr,
-        merchant: 'Apple iCloud',
-        amount: -2.99,
-        category: 'entertainment',
-        description: 'Apple iCloud storage',
-      });
-    }
+// ── Savings account transactions ──────────────────────────────────────────────
 
-    // EDP Energia on 15th
-    if (dayOfMonth === 15) {
-      acc1Transactions.push({
-        id: `demo-r1-edp-${dateStr}`,
-        date: dateStr,
-        merchant: 'EDP Energia',
-        amount: -89,
-        category: 'utilities',
-        description: 'Electricity bill',
-      });
-    }
+function generateSavingsTransactions(prefix: string, days: number, todayStr: string): Transaction[] {
+  const txs: Transaction[] = []
+  const today = new Date(todayStr)
 
-    // NOS Fibra on 16th
-    if (dayOfMonth === 16) {
-      acc1Transactions.push({
-        id: `demo-r1-nos-${dateStr}`,
-        date: dateStr,
-        merchant: 'NOS Fibra',
-        amount: -45,
-        category: 'utilities',
-        description: 'Internet bill',
-      });
-    }
-
-    // Água EPAL on 17th
-    if (dayOfMonth === 17) {
-      acc1Transactions.push({
-        id: `demo-r1-agua-${dateStr}`,
-        date: dateStr,
-        merchant: 'Água EPAL',
-        amount: -28,
-        category: 'utilities',
-        description: 'Water bill',
-      });
+  // Generate monthly transfers for every month in range
+  const monthsBack = Math.ceil(days / 30) + 1
+  for (let m = 0; m < monthsBack; m++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - m, 1)
+    const dateStr = isoDate(d.getFullYear(), d.getMonth(), 1)
+    if (dateStr >= subDays(todayStr, days)) {
+      txs.push({ id: `${prefix}-transfer-${dateStr}`, date: dateStr, merchant: 'Transfer In', amount: 500, category: 'savings', description: 'Monthly savings' })
     }
   }
 
-  // Sort descending by date
-  acc1Transactions.sort((a, b) => b.date.localeCompare(a.date));
+  txs.sort((a, b) => b.date.localeCompare(a.date))
+  return txs
+}
 
-  // Monthly spend = sum of abs(negative amounts) for current month
-  const acc1MonthlySpend = acc1Transactions
-    .filter(t => t.amount < 0 && t.date.slice(0, 7) === currentYearMonth)
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+// ── Investment account transactions ───────────────────────────────────────────
 
-  // Balance history for Account 1: 6 points from 5 months ago to now
-  const acc1BalanceHistory: BalancePoint[] = [
-    { date: subDays(todayStr, 150), balance: 1200 },
-    { date: subDays(todayStr, 120), balance: 1450 },
-    { date: subDays(todayStr, 90), balance: 1780 },
-    { date: subDays(todayStr, 60), balance: 2100 },
-    { date: subDays(todayStr, 30), balance: 2280 },
-    { date: todayStr, balance: 2450.80 },
-  ];
+function generateInvestmentTransactions(prefix: string, days: number, todayStr: string): Transaction[] {
+  const txs: Transaction[] = []
+  const today = new Date(todayStr)
+  const monthsBack = Math.ceil(days / 30) + 1
 
-  // Account 2 dates
-  const currentMonth1st = todayStr.slice(0, 8) + '01';
-  const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastMonth1st = lastMonthDate.toISOString().slice(0, 10);
-  const twoMonthsDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-  const twoMonths1st = twoMonthsDate.toISOString().slice(0, 10);
+  for (let m = 0; m < monthsBack; m++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - m, 25)
+    const dateStr = isoDate(d.getFullYear(), d.getMonth(), 25)
+    if (dateStr >= subDays(todayStr, days) && dateStr <= todayStr) {
+      txs.push({
+        id: `${prefix}-buy-${dateStr}`,
+        date: dateStr,
+        merchant: 'VWCE ETF Purchase',
+        amount: -300,
+        category: 'investment',
+        description: 'Monthly ETF contribution',
+      })
+    }
 
-  const acc2Transactions: Transaction[] = [
-    {
-      id: 'demo-s1',
-      date: currentMonth1st,
-      merchant: 'Transfer from Revolut',
-      amount: 500,
-      category: 'savings',
-      description: 'Monthly savings',
-    },
-    {
-      id: 'demo-s2',
-      date: lastMonth1st,
-      merchant: 'Transfer from Revolut',
-      amount: 500,
-      category: 'savings',
-      description: 'Monthly savings',
-    },
-    {
-      id: 'demo-s3',
-      date: twoMonths1st,
-      merchant: 'Transfer from Revolut',
-      amount: 500,
-      category: 'savings',
-      description: 'Monthly savings',
-    },
-  ];
+    // Quarterly dividend (March, June, Sep, Dec → approx month % 3 === 0)
+    const month = d.getMonth()
+    if ([2, 5, 8, 11].includes(month)) {
+      const divDate = isoDate(d.getFullYear(), d.getMonth(), 10)
+      if (divDate >= subDays(todayStr, days) && divDate <= todayStr) {
+        txs.push({
+          id: `${prefix}-div-${divDate}`,
+          date: divDate,
+          merchant: 'VWCE Dividend',
+          amount: +(45 + m * 1.5).toFixed(2),
+          category: 'income',
+          description: 'ETF quarterly dividend',
+        })
+      }
+    }
+  }
 
-  const acc2BalanceHistory: BalancePoint[] = [
-    { date: twoMonths1st, balance: 7200 },
-    { date: lastMonth1st, balance: 7700 },
-    { date: currentMonth1st, balance: 8200 },
-  ];
+  txs.sort((a, b) => b.date.localeCompare(a.date))
+  return txs
+}
 
-  // Account 3 meal card transactions
-  const acc3Transactions: Transaction[] = [
-    {
-      id: 'demo-m1',
-      date: todayStr,
-      merchant: 'Restaurante Local',
-      amount: -8.90,
-      category: 'dining',
-      description: 'Restaurante Local meal',
-    },
-    {
-      id: 'demo-m2',
-      date: subDays(todayStr, 1),
-      merchant: 'Restaurante Local',
-      amount: -10.50,
-      category: 'dining',
-      description: 'Restaurante Local meal',
-    },
-    {
-      id: 'demo-m3',
-      date: subDays(todayStr, 2),
-      merchant: 'Restaurante Local',
-      amount: -12.00,
-      category: 'dining',
-      description: 'Restaurante Local meal',
-    },
-    {
-      id: 'demo-m4',
-      date: subDays(todayStr, 3),
-      merchant: 'Restaurante Local',
-      amount: -9.80,
-      category: 'dining',
-      description: 'Restaurante Local meal',
-    },
-    {
-      id: 'demo-m5',
-      date: subDays(todayStr, 4),
-      merchant: 'Restaurante Local',
-      amount: -11.40,
-      category: 'dining',
-      description: 'Restaurante Local meal',
-    },
-  ];
+// ── Meal card transactions ────────────────────────────────────────────────────
 
-  const acc3BalanceHistory: BalancePoint[] = [
-    { date: currentMonth1st, balance: 150 },
-    { date: subDays(todayStr, 3), balance: 141.10 },
-    { date: todayStr, balance: 135.50 },
-  ];
+function generateMealCardTransactions(prefix: string, days: number, todayStr: string): Transaction[] {
+  const txs: Transaction[] = []
+  const restaurantOptions: [string, number][] = [
+    ['Restaurante Aliança',  -8.90],
+    ['Tasca Central',        -10.50],
+    ['Cantina Universitária',-6.00],
+    ['Bifanas do Chico',     -7.50],
+    ['Snack Bar Saudade',    -9.80],
+    ['Restaurante Local',    -11.40],
+    ['Pingo Doce Deli',      -12.00],
+  ]
 
-  return [
-    {
-      id: 'demo-revolut-1',
-      name: 'My Revolut',
-      type: 'checking',
-      balance: 2450.80,
-      currency: 'EUR',
-      institution: 'revolut',
-      status: 'connected',
-      icon: '🟦',
-      lastUpdated: todayStr,
-      monthlySpend: acc1MonthlySpend,
-      transactions: acc1Transactions,
-      balanceHistory: acc1BalanceHistory,
-    },
-    {
-      id: 'demo-savings-1',
-      name: 'Savings Account',
-      type: 'savings',
-      balance: 8200,
-      currency: 'EUR',
-      institution: 'cgd',
-      status: 'connected',
-      icon: '🏦',
-      lastUpdated: todayStr,
-      monthlySpend: 0,
-      transactions: acc2Transactions,
-      balanceHistory: acc2BalanceHistory,
-    },
-    {
-      id: 'demo-meal-1',
-      name: 'Sodexo Meal Card',
-      type: 'meal-card',
-      balance: 135.50,
-      currency: 'EUR',
-      institution: 'meal-card',
-      status: 'connected',
-      icon: '🍽️',
-      lastUpdated: todayStr,
-      monthlySpend: 14.50,
-      transactions: acc3Transactions,
-      balanceHistory: acc3BalanceHistory,
-      mealCardSpecific: {
-        provider: 'sodexo',
-        expiryDate: '2026-12-31',
-        monthlyAllowance: 150,
-      },
-    },
-  ];
+  for (let i = 0; i < days; i++) {
+    const dateStr = subDays(todayStr, i)
+    const dow     = new Date(dateStr).getDay()  // 0=Sun, 6=Sat
+    if (dow === 0 || dow === 6) continue         // no meals on weekends
+    const [m, amt] = seededPick(restaurantOptions, i)
+    txs.push({ id: `${prefix}-meal-${i}`, date: dateStr, merchant: m, amount: amt, category: 'dining', description: `${m} meal` })
+  }
+
+  txs.sort((a, b) => b.date.localeCompare(a.date))
+  return txs
+}
+
+// ── Balance history ────────────────────────────────────────────────────────────
+
+function buildBalanceHistory(finalBalance: number, days: number, todayStr: string, type: string): BalancePoint[] {
+  const points = Math.min(8, Math.ceil(days / 30) + 2)
+  const history: BalancePoint[] = []
+
+  for (let i = points - 1; i >= 0; i--) {
+    const date = i === 0 ? todayStr : subDays(todayStr, Math.round((days / (points - 1)) * i))
+    let balance: number
+
+    if (type === 'investment') {
+      // Compound-like growth: roughly 0.8%/month
+      const monthsAgo = (i / (points - 1)) * (days / 30)
+      balance = Math.round(finalBalance / Math.pow(1.008, monthsAgo))
+    } else if (type === 'savings') {
+      // Linear accumulation
+      balance = Math.round(finalBalance * (1 - (i / (points - 1)) * 0.3))
+    } else {
+      // Checking: fluctuates around a mean
+      const offset = (i / (points - 1)) * 0.4 * finalBalance
+      balance = Math.round(finalBalance * 0.85 + offset * ((i % 2 === 0) ? 0.8 : 1.2))
+    }
+
+    history.push({ date, balance: Math.round(balance * 100) / 100 })
+  }
+
+  return history
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
+export function generateDemoData(config?: DemoConfig): Account[] {
+  const cfg = config ?? DEFAULT_DEMO_CONFIG
+
+  const today    = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+  const curMonth = todayStr.slice(0, 7)
+
+  return cfg.accounts
+    .filter(a => a.include)
+    .map(acc => {
+      let txs: Transaction[] = []
+
+      switch (acc.type) {
+        case 'checking':
+          txs = generateCheckingTransactions(`demo-${acc.id}`, cfg.daysOfHistory, todayStr)
+          break
+        case 'savings':
+          txs = generateSavingsTransactions(`demo-${acc.id}`, cfg.daysOfHistory, todayStr)
+          break
+        case 'investment':
+          txs = generateInvestmentTransactions(`demo-${acc.id}`, cfg.daysOfHistory, todayStr)
+          break
+        case 'meal-card':
+          txs = generateMealCardTransactions(`demo-${acc.id}`, cfg.daysOfHistory, todayStr)
+          break
+      }
+
+      const monthlySpend = txs
+        .filter(t => t.amount < 0 && t.date.slice(0, 7) === curMonth)
+        .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+      const balanceHistory = buildBalanceHistory(acc.balance, cfg.daysOfHistory, todayStr, acc.type)
+
+      const base: Account = {
+        id:           `demo-${acc.id}`,
+        name:         acc.name,
+        type:         acc.type,
+        balance:      acc.balance,
+        currency:     'EUR',
+        institution:  acc.institution,
+        status:       'connected',
+        icon:         acc.icon,
+        lastUpdated:  todayStr,
+        monthlySpend: Math.round(monthlySpend * 100) / 100,
+        transactions: txs,
+        balanceHistory,
+      }
+
+      if (acc.type === 'meal-card') {
+        base.mealCardSpecific = {
+          provider:         acc.mealProvider ?? 'other',
+          expiryDate:       `${today.getFullYear() + 1}-12-31`,
+          monthlyAllowance: acc.monthlyAllowance ?? 150,
+        }
+      }
+
+      return base
+    })
 }
