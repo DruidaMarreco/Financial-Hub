@@ -1,10 +1,12 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Layout from '../components/Layout'
 import { useAuth } from '../hooks/useAuth'
+import { useAccounts } from '../hooks/useAccounts'
 import { BankConnectionModal } from '../components/BankConnectionModal'
+import { useState } from 'react'
 
 interface Transaction {
   id: string
@@ -15,7 +17,7 @@ interface Transaction {
   description: string
 }
 
-interface Account {
+interface RichAccount {
   id: string
   name: string
   balance: number
@@ -55,25 +57,16 @@ function timeGreeting() {
 }
 
 export default function Dashboard() {
-  const { user, loading, isAuthenticated } = useAuth()
-  const router = useRouter()
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const { user, loading: authLoading, isAuthenticated } = useAuth()
+  const { accounts, loading: accountsLoading, error: accountsError, loadAccounts } = useAccounts()
   const [showBankModal, setShowBankModal] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) router.push('/signin')
-  }, [loading, isAuthenticated, router])
+    if (!authLoading && !isAuthenticated) router.push('/signin')
+  }, [authLoading, isAuthenticated, router])
 
-  const loadAccounts = () => {
-    try {
-      const raw = localStorage.getItem('user_accounts')
-      if (raw) setAccounts(JSON.parse(raw))
-    } catch { setAccounts([]) }
-  }
-
-  useEffect(() => { loadAccounts() }, [])
-
-  if (loading) {
+  if (authLoading || accountsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
