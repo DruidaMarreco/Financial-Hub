@@ -17,6 +17,7 @@ export default function Layout({ children, title }: LayoutProps) {
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/accounts', label: 'Accounts', icon: '🏦' },
     { href: '/transactions', label: 'Transactions', icon: '💳' },
+    { href: '/budgets', label: 'Budgets', icon: '🎯' },
     { href: '/analytics', label: 'Analytics', icon: '📈' },
     { href: '/portfolio', label: 'Portfolio', icon: '💰' },
     { href: '/insights', label: 'Insights', icon: '🤖' },

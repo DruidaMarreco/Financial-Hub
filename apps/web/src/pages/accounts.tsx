@@ -814,6 +814,90 @@ export default function AccountsPage() {
                       ))}
                     </div>
 
+                    {/* ── Cash Flow (checking / savings only) ────────── */}
+                    {(selectedAccount.type === 'checking' || selectedAccount.type === 'savings') && (() => {
+                      const now = new Date()
+                      const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                      const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+                      const moLabel = MONTHS[now.getMonth()]
+                      const moTxs = (selectedAccount.transactions || []).filter(tx => tx.date?.startsWith(curKey))
+                      const moIncome   = moTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0)
+                      const moExpenses = moTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
+                      const netFlow    = moIncome - moExpenses
+
+                      // Top categories this month
+                      const catMap: Record<string, number> = {}
+                      moTxs.filter(t => t.amount < 0).forEach(t => {
+                        const c = t.category || 'other'
+                        catMap[c] = (catMap[c] ?? 0) + Math.abs(t.amount)
+                      })
+                      const topCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 4)
+                      const maxCat  = topCats[0]?.[1] || 1
+
+                      const CAT_EMOJI: Record<string, string> = {
+                        groceries: '🛒', dining: '🍽️', coffee: '☕', transport: '🚌',
+                        entertainment: '🎬', shopping: '🛍️', healthcare: '💊',
+                        utilities: '💡', income: '💰', savings: '🏦', other: '💳',
+                      }
+                      const fmtEur = (n: number) =>
+                        new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(Math.abs(n))
+
+                      return (
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">{moLabel} Cash Flow</p>
+
+                          {/* Income / Expenses / Net */}
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Income</p>
+                              <p className="text-sm font-bold text-emerald-600 tabular-nums">
+                                {moIncome > 0 ? `+${fmtEur(moIncome)}` : '—'}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Spent</p>
+                              <p className="text-sm font-bold text-red-500 tabular-nums">
+                                {moExpenses > 0 ? `-${fmtEur(moExpenses)}` : '—'}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2">
+                              <p className="text-xs text-gray-400">Net</p>
+                              <p className={`text-sm font-bold tabular-nums ${netFlow >= 0 ? 'text-blue-600' : 'text-orange-500'}`}>
+                                {netFlow !== 0 ? `${netFlow > 0 ? '+' : ''}${fmtEur(netFlow)}` : '—'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Spending by category */}
+                          {topCats.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 mb-2">Top Spending</p>
+                              <div className="space-y-2">
+                                {topCats.map(([cat, amount]) => (
+                                  <div key={cat}>
+                                    <div className="flex justify-between text-xs mb-0.5">
+                                      <span className="font-medium text-gray-700">{CAT_EMOJI[cat] || '💳'} {cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+                                      <span className="font-semibold text-gray-900 tabular-nums">{fmtEur(amount)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                      <div
+                                        className="h-full bg-blue-500 rounded-full"
+                                        style={{ width: `${Math.round((amount / maxCat) * 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {moTxs.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">No transactions this month yet</p>
+                          )}
+                        </div>
+                      )
+                    })()}
+
                     {/* Buttons */}
                     <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
                       <button
