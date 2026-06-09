@@ -21,6 +21,7 @@ export default function Layout({ children, title }: LayoutProps) {
     { href: '/portfolio', label: 'Portfolio', icon: '💰' },
     { href: '/insights', label: 'Insights', icon: '🤖' },
     { href: '/visualizations', label: 'Charts', icon: '📉' },
+    { href: '/settings', label: 'Settings', icon: '⚙️' },
   ];
 
   const isActive = (href: string) => router.pathname === href;
@@ -69,19 +70,10 @@ export default function Layout({ children, title }: LayoutProps) {
             {/* User Menu */}
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">{user?.name?.split(' ')[0]}</p>
+                <Link href="/settings" className="text-right group cursor-pointer">
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{user?.name?.split(' ')[0]}</p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    logout();
-                    router.push('/signin');
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg active:scale-95"
-                >
-                  Sign Out
-                </button>
+                </Link>
               </div>
 
               {/* Mobile Menu Button */}
@@ -114,15 +106,13 @@ export default function Layout({ children, title }: LayoutProps) {
                   {item.label}
                 </Link>
               ))}
-              <button
-                onClick={() => {
-                  logout();
-                  router.push('/signin');
-                }}
-                className="w-full text-left px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg transition-all text-sm font-semibold mt-2"
+              <Link
+                href="/settings"
+                className="block px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 rounded-lg transition-all text-sm font-semibold mt-2"
+                onClick={() => setMobileMenuOpen(false)}
               >
-                Sign Out
-              </button>
+                ⚙️ Settings & Sign Out
+              </Link>
             </div>
           )}
         </div>
@@ -131,11 +121,10 @@ export default function Layout({ children, title }: LayoutProps) {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {title && (
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+          <div className="mb-10">
+            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
               {title}
             </h1>
-            <p className="text-gray-600">Welcome to your financial dashboard</p>
           </div>
         )}
         {children}

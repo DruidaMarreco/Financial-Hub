@@ -87,8 +87,10 @@ export default function AnalyticsPage() {
           if (curIncome > 0) setComputedSavingsRate(Math.round(((curIncome - curExpense) / curIncome) * 100));
 
           // Trend: compare last full month to month before it
-          const prevKey1 = (() => { let m = now.getMonth() - 1; let y = now.getFullYear(); if (m < 0) { m += 11; y -= 1; } return `${y}-${String(m + 1).padStart(2, '0')}`; })();
-          const prevKey2 = (() => { let m = now.getMonth() - 2; let y = now.getFullYear(); if (m < 0) { m += 12; y -= 1; } return `${y}-${String(m + 1).padStart(2, '0')}`; })();
+          const prevDate1 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevKey1 = `${prevDate1.getFullYear()}-${String(prevDate1.getMonth() + 1).padStart(2, '0')}`;
+          const prevDate2 = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+          const prevKey2 = `${prevDate2.getFullYear()}-${String(prevDate2.getMonth() + 1).padStart(2, '0')}`;
           const prevSpend1 = negTxs.filter((t) => t.date?.startsWith(prevKey1)).reduce((s, t) => s + Math.abs(t.amount), 0);
           const prevSpend2 = negTxs.filter((t) => t.date?.startsWith(prevKey2)).reduce((s, t) => s + Math.abs(t.amount), 0);
           if (prevSpend2 > 0 && prevSpend1 > 0) {
