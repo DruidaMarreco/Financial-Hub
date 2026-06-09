@@ -11,6 +11,7 @@
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
+    "test:integration": "bash test-integration.sh",
     "lint": "npm run lint --workspaces",
     "db:migrate": "npx prisma migrate dev --schema=libs/data/prisma/schema.prisma",
     "db:migrate:deploy": "npx prisma migrate deploy --schema=libs/data/prisma/schema.prisma",

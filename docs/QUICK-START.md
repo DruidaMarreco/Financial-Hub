@@ -62,7 +62,23 @@ npm run db:seed
 # - Investment portfolio with holdings
 ```
 
-### 4. Start Development Servers (1 minute)
+### 4. Verify Everything Works (Optional, 1 minute)
+
+```bash
+# Run integration tests to verify system is working
+npm run test:integration
+
+# This tests:
+# ✓ API connectivity
+# ✓ Authentication
+# ✓ Accounts API
+# ✓ Net worth calculation
+# ✓ Transactions API
+# ✓ Statistics
+# ✓ Error handling
+```
+
+### 5. Start Development Servers (1 minute)
 
 ```bash
 npm run dev
@@ -125,6 +141,7 @@ npm run db:studio              # Open Prisma Studio (database viewer)
 
 # Testing & Quality
 npm run test                   # Run all tests
+npm run test:integration       # Run integration tests
 npm run lint                   # Lint all packages
 npm test -- --watch            # Run tests in watch mode
 
