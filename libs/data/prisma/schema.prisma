@@ -10,6 +10,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Prisma seeding configuration
+// Run with: npx prisma db seed
+// or:       npm run db:seed
+
 model User {
   id        String     @id @default(cuid())
   email     String     @unique
