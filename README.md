@@ -43,7 +43,7 @@ financial-hub/
 
 - Node.js >= 18
 - npm >= 9
-- PostgreSQL (for local development)
+- PostgreSQL >= 12 (local or Docker)
 
 ### Installation
 
@@ -52,16 +52,46 @@ financial-hub/
 npm install
 
 # Set up environment variables
-cp .env.example .env.local
+cp .env.example .env
+
+# Configure database connection (see docs/DATABASE_SETUP.md)
+# Edit .env and set DATABASE_URL to your PostgreSQL instance
 
 # Run database migrations
-npm run migrate --workspace=apps/api
+npm run db:migrate
 
 # Start development servers
 npm run dev
 ```
 
 The frontend will be available at `http://localhost:3000` and the API at `http://localhost:3001`.
+
+### Database Setup
+
+**⚠️ Important**: Before running the application, you must set up PostgreSQL and run migrations.
+
+#### Quick Start with Docker
+
+```bash
+# Start PostgreSQL container
+docker-compose up -d postgres
+
+# Wait for it to be healthy (check docker-compose ps)
+
+# Run migrations
+npm run db:migrate
+
+# (Optional) View database in Prisma Studio
+npm run db:studio
+```
+
+#### Local PostgreSQL Setup
+
+See [docs/DATABASE_SETUP.md](./docs/DATABASE_SETUP.md) for detailed instructions on:
+- Installing PostgreSQL locally
+- Creating the database
+- Running migrations
+- Troubleshooting connection issues
 
 ## Project Structure
 
