@@ -8,6 +8,8 @@ node_modules/
 /build
 /.next
 /out
+**/apps/web/.next/
+apps/web/.next/
 
 # Testing
 /coverage

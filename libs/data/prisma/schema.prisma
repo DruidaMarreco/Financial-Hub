@@ -18,10 +18,12 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  profile       UserProfile?
-  accounts      Account[]
-  portfolios    Portfolio[]
-  categories    TransactionCategory[]
+  profile              UserProfile?
+  accounts             Account[]
+  portfolios           Portfolio[]
+  categories           TransactionCategory[]
+  bankIntegrations     BankIntegration[]
+  syncLogs             SyncLog[]
 
   @@map("users")
 }
@@ -43,20 +45,22 @@ model Account {
   userId          String
   name            String
   accountNumber   String
-  type            String   // bank, credit_card, investment, crypto, savings
+  type            String   // bank, credit_card, investment, crypto, savings, meal-card
   status          String   @default("active") // active, inactive, closed
   balance         Float    @default(0)
   currency        String   @default("USD")
-  institution     String
+  institution     String   // revolut, cgd, millennium, edenred, other
   plaidAccountId  String?
   plaidAccessToken String?
   lastSync        DateTime?
+  monthlySpend    Float    @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  holdings     Holding[]
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  holdings        Holding[]
+  balanceHistory  BalanceHistory[]
 
   @@unique([userId, accountNumber])
   @@map("accounts")
@@ -153,4 +157,60 @@ model PortfolioMetrics {
   portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@map("portfolio_metrics")
+}
+
+model BalanceHistory {
+  id        String   @id @default(cuid())
+  accountId String
+  balance   Float
+  currency  String   @default("USD")
+  recordedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([recordedAt])
+  @@map("balance_history")
+}
+
+model BankIntegration {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String   // revolut, cgd, edenred
+  encryptedToken  String   // Encrypted access token
+  refreshToken    String?  // Encrypted refresh token
+  expiresAt       DateTime?
+  lastSyncedAt    DateTime?
+  syncStatus      String   @default("pending") // pending, syncing, success, failed
+  lastError       String?
+  accountCount    Int      @default(0)
+  transactionCount Int     @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("bank_integrations")
+}
+
+model SyncLog {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String   // revolut, cgd, edenred
+  status          String   // success, failed
+  syncedAt        DateTime @default(now())
+  accountsSynced  Int      @default(0)
+  transactionsSynced Int   @default(0)
+  errorMessage    String?
+  duration        Int?     // milliseconds
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([syncedAt])
+  @@map("sync_logs")
 }
