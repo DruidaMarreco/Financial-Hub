@@ -43,55 +43,87 @@ financial-hub/
 
 - Node.js >= 18
 - npm >= 9
-- PostgreSQL >= 12 (local or Docker)
+- PostgreSQL >= 12 (local or Docker) OR Docker Desktop
 
-### Installation
+### Quick Start (Recommended)
+
+#### Linux/macOS
+```bash
+# Run the setup script (it handles everything!)
+bash setup.sh
+
+# Then start development servers
+npm run dev
+```
+
+#### Windows
+```powershell
+# Run the setup script (it handles everything!)
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Then start development servers
+npm run dev
+```
+
+The setup script will:
+- ✅ Verify Node.js version
+- ✅ Install dependencies
+- ✅ Create .env file (if needed)
+- ✅ Start PostgreSQL via Docker (if available)
+- ✅ Run database migrations
+- ✅ Build shared libraries
+
+**Result**: Frontend at http://localhost:3000, API at http://localhost:3001
+
+### Manual Setup
+
+If you prefer to set up manually:
 
 ```bash
-# Clone and install dependencies
+# Install dependencies
 npm install
 
-# Set up environment variables
+# Create environment file
 cp .env.example .env
 
-# Configure database connection (see docs/DATABASE_SETUP.md)
-# Edit .env and set DATABASE_URL to your PostgreSQL instance
+# Start PostgreSQL (choose one):
+#   Option A: Docker
+docker-compose up -d postgres
 
-# Run database migrations
+#   Option B: Local PostgreSQL (see docs/DATABASE_SETUP.md)
+
+# Run migrations
 npm run db:migrate
 
 # Start development servers
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000` and the API at `http://localhost:3001`.
-
-### Database Setup
-
-**⚠️ Important**: Before running the application, you must set up PostgreSQL and run migrations.
-
-#### Quick Start with Docker
+### Database Management
 
 ```bash
-# Start PostgreSQL container
-docker-compose up -d postgres
+# View the database in Prisma Studio
+npm run db:studio
 
-# Wait for it to be healthy (check docker-compose ps)
-
-# Run migrations
+# Create a new migration (after schema changes)
 npm run db:migrate
 
-# (Optional) View database in Prisma Studio
-npm run db:studio
+# Deploy migrations (production)
+npm run db:migrate:deploy
+
+# Reset database (⚠️ deletes all data)
+npm run db:migrate:reset
 ```
 
-#### Local PostgreSQL Setup
+### Database Setup Details
 
-See [docs/DATABASE_SETUP.md](./docs/DATABASE_SETUP.md) for detailed instructions on:
-- Installing PostgreSQL locally
-- Creating the database
-- Running migrations
+For detailed database setup instructions, including:
+- Installing PostgreSQL locally (macOS, Windows, Linux)
+- Using Docker for PostgreSQL
 - Troubleshooting connection issues
+- Seeding initial data
+
+See [docs/DATABASE_SETUP.md](./docs/DATABASE_SETUP.md)
 
 ## Project Structure
 
