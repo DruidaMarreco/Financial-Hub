@@ -22,6 +22,8 @@ export default function AnalyticsPage() {
   const [monthlyData, setMonthlyData] = useState<Array<{ month: string; amount: number; budget: number }>>([]);
   const [categoryData, setCategoryData] = useState<Array<{ category: string; amount: number; percentage: number }>>([]);
   const [filteredCategories, setFilteredCategories] = useState<Array<{ category: string; amount: number; percentage: number }>>([]);
+  const [computedSavingsRate, setComputedSavingsRate] = useState<number | null>(null);
+  const [spendTrend, setSpendTrend] = useState<string>('—');
 
   // Load real data from user accounts
   useEffect(() => {
@@ -55,12 +57,44 @@ export default function AnalyticsPage() {
           setCategoryData(categories);
           setFilteredCategories(categories);
 
-          // Generate monthly data (simplified - using current month for now)
-          const currentMonth = new Date().toLocaleString('default', { month: 'short' });
-          const currentMonthSpend = accounts.reduce((sum, acc) => sum + (acc.monthlySpend || 0), 0);
-          setMonthlyData([
-            { month: currentMonth, amount: currentMonthSpend, budget: 3000 },
-          ]);
+          // Build last 6 months of spend data from real transactions
+          const now = new Date();
+          const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const allTxs = accounts.flatMap((a) => a.transactions ?? []);
+          const negTxs = allTxs.filter((t) => t.amount < 0);
+          const monthly6: Array<{ month: string; amount: number; budget: number }> = [];
+          for (let i = 5; i >= 0; i--) {
+            let m = now.getMonth() - i;
+            let y = now.getFullYear();
+            if (m < 0) { m += 12; y -= 1; }
+            const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+            const total = negTxs
+              .filter((t) => t.date?.startsWith(key))
+              .reduce((s, t) => s + Math.abs(t.amount), 0);
+            monthly6.push({ month: `${MONTH_NAMES[m]} '${String(y).slice(2)}`, amount: Math.round(total * 100) / 100, budget: 3000 });
+          }
+          setMonthlyData(monthly6);
+
+          // Savings rate: income vs expenses current month
+          const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          let curIncome = 0; let curExpense = 0;
+          allTxs.forEach((t) => {
+            if (t.date?.startsWith(curKey)) {
+              if (t.amount > 0) curIncome += t.amount;
+              else curExpense += Math.abs(t.amount);
+            }
+          });
+          if (curIncome > 0) setComputedSavingsRate(Math.round(((curIncome - curExpense) / curIncome) * 100));
+
+          // Trend: compare last full month to month before it
+          const prevKey1 = (() => { let m = now.getMonth() - 1; let y = now.getFullYear(); if (m < 0) { m += 11; y -= 1; } return `${y}-${String(m + 1).padStart(2, '0')}`; })();
+          const prevKey2 = (() => { let m = now.getMonth() - 2; let y = now.getFullYear(); if (m < 0) { m += 12; y -= 1; } return `${y}-${String(m + 1).padStart(2, '0')}`; })();
+          const prevSpend1 = negTxs.filter((t) => t.date?.startsWith(prevKey1)).reduce((s, t) => s + Math.abs(t.amount), 0);
+          const prevSpend2 = negTxs.filter((t) => t.date?.startsWith(prevKey2)).reduce((s, t) => s + Math.abs(t.amount), 0);
+          if (prevSpend2 > 0 && prevSpend1 > 0) {
+            const pct = Math.round(((prevSpend1 - prevSpend2) / prevSpend2) * 100);
+            setSpendTrend(pct > 0 ? `↑ ${pct}%` : `↓ ${Math.abs(pct)}%`);
+          }
         }
       } catch (error) {
         console.error('Error loading analytics:', error);
@@ -151,10 +185,10 @@ export default function AnalyticsPage() {
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
-            { icon: '💸', label: 'Total Spending', value: `$${totalSpending}` },
-            { icon: '📊', label: 'Avg Monthly', value: `$${Math.round(avgMonthly)}` },
-            { icon: '🎯', label: 'Savings Rate', value: '32%' },
-            { icon: '📈', label: 'Trend', value: '↓ 8%' },
+            { icon: '💸', label: 'Total Spending', value: totalSpending > 0 ? `€${totalSpending.toFixed(2)}` : '—' },
+            { icon: '📊', label: 'Avg Monthly', value: avgMonthly > 0 ? `€${Math.round(avgMonthly)}` : '—' },
+            { icon: '🎯', label: 'Savings Rate', value: computedSavingsRate !== null ? `${computedSavingsRate}%` : '—' },
+            { icon: '📈', label: 'vs Last Month', value: spendTrend },
           ].map((m, i) => (
             <div key={i} className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg hover:shadow-xl transition-all cursor-pointer">
               <div className="text-3xl mb-2">{m.icon}</div>
@@ -173,7 +207,7 @@ export default function AnalyticsPage() {
                 <div key={idx} className="hover:bg-gray-50 p-4 rounded-lg transition-all mb-3 cursor-pointer">
                   <div className="flex justify-between mb-2">
                     <span className="font-semibold">{item.month}</span>
-                    <span className="text-sm text-gray-600">${item.amount} / ${item.budget}</span>
+                    <span className="text-sm text-gray-600">€{item.amount.toFixed(0)} / €{item.budget}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div className={`h-full transition-all ${item.amount > item.budget ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${Math.min((item.amount / item.budget) * 100, 100)}%` }}></div>
@@ -188,7 +222,7 @@ export default function AnalyticsPage() {
                 <div key={idx} className="hover:bg-blue-50 p-4 rounded-xl transition-all mb-3 cursor-pointer">
                   <div className="flex justify-between mb-2">
                     <span className="font-semibold">{item.category}</span>
-                    <span className="font-bold text-blue-600">${item.amount}</span>
+                    <span className="font-bold text-blue-600">€{item.amount.toFixed(2)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div className="h-full bg-blue-500" style={{ width: `${item.percentage}%` }}></div>

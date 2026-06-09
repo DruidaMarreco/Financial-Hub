@@ -10,8 +10,9 @@ interface Account {
   balance: number;
   currency: string;
   institution: string;
-  transactions?: any[];
+  transactions?: Array<{ amount: number; date: string; category: string }>;
   monthlySpend?: number;
+  balanceHistory?: Array<{ date: string; balance: number }>;
 }
 
 export default function Dashboard() {
@@ -22,6 +23,8 @@ export default function Dashboard() {
   const [accountCount, setAccountCount] = useState(0);
   const [transactionCount, setTransactionCount] = useState(0);
   const [monthlySpend, setMonthlySpend] = useState(0);
+  const [savingsRate, setSavingsRate] = useState<number | null>(null);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -43,10 +46,29 @@ export default function Dashboard() {
           const txCount = parsedAccounts.reduce((sum, acc) => sum + (acc.transactions?.length || 0), 0);
           const spend = parsedAccounts.reduce((sum, acc) => sum + (acc.monthlySpend || 0), 0);
 
+          // Compute current month income & savings rate from transactions
+          const now = new Date();
+          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          let incomeThisMonth = 0;
+          let expenseThisMonth = 0;
+          parsedAccounts.forEach((acc) => {
+            (acc.transactions || []).forEach((tx) => {
+              if (tx.date?.startsWith(currentMonth)) {
+                if (tx.amount > 0) incomeThisMonth += tx.amount;
+                else expenseThisMonth += Math.abs(tx.amount);
+              }
+            });
+          });
+          const computedSavingsRate = incomeThisMonth > 0
+            ? Math.round(((incomeThisMonth - expenseThisMonth) / incomeThisMonth) * 100)
+            : null;
+
           setTotalBalance(total);
           setAccountCount(parsedAccounts.length);
           setTransactionCount(txCount);
           setMonthlySpend(spend);
+          setMonthlyIncome(incomeThisMonth);
+          setSavingsRate(computedSavingsRate);
         }
       } catch (error) {
         console.error('Error loading accounts:', error);
@@ -130,8 +152,8 @@ export default function Dashboard() {
                 {
                   icon: '🔗',
                   title: 'Connect Bank Accounts',
-                  description: 'Link your bank accounts via Plaid for automatic transaction tracking',
-                  status: 'Coming soon'
+                  description: 'Link Revolut via OAuth or use Demo Bank to import 90 days of sample data',
+                  status: 'Available'
                 },
                 {
                   icon: '📊',
@@ -173,10 +195,26 @@ export default function Dashboard() {
           {/* Quick Stats */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { label: 'Monthly Spending', value: '$0.00', icon: '💸' },
-              { label: 'Savings Rate', value: '0%', icon: '📈' },
-              { label: 'Budget Status', value: 'Not set', icon: '🎯' },
-              { label: 'Financial Score', value: '--', icon: '⭐' },
+              {
+                label: 'This Month Spending',
+                value: monthlySpend > 0 ? `€${monthlySpend.toFixed(2)}` : accountCount > 0 ? '€0.00' : '—',
+                icon: '💸',
+              },
+              {
+                label: 'Savings Rate',
+                value: savingsRate !== null ? `${savingsRate}%` : accountCount > 0 ? 'N/A' : '—',
+                icon: '📈',
+              },
+              {
+                label: 'Monthly Income',
+                value: monthlyIncome > 0 ? `€${monthlyIncome.toFixed(2)}` : accountCount > 0 ? '€0.00' : '—',
+                icon: '🎯',
+              },
+              {
+                label: 'Transactions',
+                value: transactionCount > 0 ? String(transactionCount) : '—',
+                icon: '⭐',
+              },
             ].map((stat, idx) => (
               <div key={idx} className="bg-white/60 backdrop-blur rounded-lg p-4 text-center border border-white/20 hover:shadow-md transition-all">
                 <div className="text-2xl mb-2">{stat.icon}</div>

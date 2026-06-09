@@ -43,7 +43,7 @@ const BANKS = [
   },
 ];
 
-function SetupGuide({ type, onClose }: { type: ErrorType; onClose: () => void }) {
+function SetupGuide({ type, onClose, onDemoConnect }: { type: ErrorType; onClose: () => void; onDemoConnect?: () => void }) {
   if (type === 'api_down') {
     return (
       <div className="space-y-4">
@@ -60,13 +60,21 @@ function SetupGuide({ type, onClose }: { type: ErrorType; onClose: () => void })
             <p>npm run dev --workspace=apps/api</p>
           </div>
         </div>
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>💡 Try Demo Bank instead</strong> — it imports 90 days of sample data instantly with no API needed.
+        <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+          <p className="text-sm text-green-800 mb-3">
+            <strong>💡 Try Demo Bank instead</strong> — imports 90 days of sample data instantly with no API needed.
           </p>
+          {onDemoConnect && (
+            <button
+              onClick={onDemoConnect}
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold rounded-lg transition-all active:scale-95 shadow-sm"
+            >
+              🎮 Connect Demo Bank
+            </button>
+          )}
         </div>
-        <button onClick={onClose} className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all">
-          Got it
+        <button onClick={onClose} className="w-full py-2 px-4 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg transition-all">
+          ← Back to bank selection
         </button>
       </div>
     );
@@ -209,7 +217,7 @@ export function BankConnectionModal({ isOpen, onClose, onSuccess }: BankConnecti
             <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : errorType && (errorType === 'api_down' || errorType === 'credentials_missing') ? (
-          <SetupGuide type={errorType} onClose={() => { setErrorType(null); setError(''); }} />
+          <SetupGuide type={errorType} onClose={() => { setErrorType(null); setError(''); }} onDemoConnect={errorType === 'api_down' ? handleDemoConnect : undefined} />
         ) : (
           <>
             {/* Generic error */}
