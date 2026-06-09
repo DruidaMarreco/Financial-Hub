@@ -56,8 +56,8 @@ export default function Layout({ children, title }: LayoutProps) {
                   href={item.href}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-transparent bg-clip-text from-blue-600 to-purple-600 shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-100/50'
+                      ? 'bg-blue-100 text-blue-700 shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-100/50 hover:text-gray-900'
                   }`}
                 >
                   <span>{item.icon}</span>
@@ -105,7 +105,7 @@ export default function Layout({ children, title }: LayoutProps) {
                   href={item.href}
                   className={`block px-4 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-transparent bg-clip-text from-blue-600 to-purple-600'
+                      ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-100/50'
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
